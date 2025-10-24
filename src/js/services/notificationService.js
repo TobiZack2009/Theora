@@ -35,8 +35,9 @@ async function generateAndAddNotification() {
     const budget = appState.budget;
     const todos = appState.todos.filter(t => !t.completed);
     const events = appState.events;
+    const transactions = appState.transactions;
 
-    const notification = await generateNotification(budget, todos, events);
+    const notification = await generateNotification(budget, todos, events, transactions);
     appState.addNotification(notification);
 
   } catch (error) {

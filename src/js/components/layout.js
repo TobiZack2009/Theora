@@ -24,7 +24,7 @@ export function renderLayout(container, viewRenderer) {
       <header class="bg-bg-secondary/80 backdrop-blur-sm border-b border-border-color sticky top-0 z-20">
         <div class="container mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-            <img src="generated-icon.png" alt="Theora Logo" class="h-8 w-8">
+            <img src="assets/logo.png" alt="Theora Logo" class="h-8 w-8">
             <h1 class="text-2xl font-bold text-gradient">Theora</h1>
           </div>
           
@@ -137,7 +137,7 @@ function updateNotificationUI() {
 
   if (appState.notifications.length > 0) {
     notificationListDiv.innerHTML = appState.notifications.map(n => `
-      <div class="notification-item ${n.type} ${n.read ? 'opacity-60' : ''}" data-id="${n.id}">
+      <div class="notification-item general ${n.type} ${n.read ? 'opacity-60' : ''}" data-id="${n.id}">
         <span class="text-xl">${getNotificationIcon(n.type)}</span>
         <div class="flex-1">
           <p class="font-medium">${n.message}</p>

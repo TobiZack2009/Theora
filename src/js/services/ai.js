@@ -273,64 +273,71 @@ Ensure the tone is encouraging, culturally relevant (e.g., acknowledging "hustle
   return result;
 }
 
-export async function generateNotification(budget, todos, events) {
-  const urgentTodos = todos.filter(t => t.priority === 'high' && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000)); // Due within 24 hours
-  const upcomingEvents = events.filter(e => new Date(e.date) >= new Date() && new Date(e.date) <= new Date(Date.now() + 24 * 60 * 60 * 1000)); // Within 24 hours
-  const lowBudget = budget.limit - budget.spent < budget.limit * 0.2; // Less than 20% remaining
-
+export async function generateNotification(budget, todos, events, transactions) {
   const possibleNotifications = [];
 
-  // Bias towards urgent todos
-  if (urgentTodos.length > 0) {
-    for (let i = 0; i < Math.min(urgentTodos.length, 2); i++) { // Add up to 2 urgent todo notifications
-      possibleNotifications.push({ type: 'todo', item: urgentTodos[i] });
-    }
+  // Add a todo notification if todos exist
+  if (todos.length > 0) {
+    const randomTodo = todos[Math.floor(Math.random() * todos.length)];
+    possibleNotifications.push({ type: 'todo', item: randomTodo });
   }
 
-  // Bias towards upcoming events
-  if (upcomingEvents.length > 0) {
-    for (let i = 0; i < Math.min(upcomingEvents.length, 2); i++) { // Add up to 2 upcoming event notifications
-      possibleNotifications.push({ type: 'event', item: upcomingEvents[i] });
-    }
+  // Add an event notification if events exist
+  if (events.length > 0) {
+    const randomEvent = events[Math.floor(Math.random() * events.length)];
+    possibleNotifications.push({ type: 'event', item: randomEvent });
   }
 
-  // Bias towards low budget
-  if (lowBudget) {
-    possibleNotifications.push({ type: 'budget', item: budget });
+  // Add a budget notification if a budget is set
+  const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const remainingBudget = budget.limit - totalSpent;
+  if (budget.limit > 0) {
+    possibleNotifications.push({ type: 'budget', item: { ...budget, remaining: remainingBudget } });
   }
 
-  // Add some general options if not enough urgent items
-  if (possibleNotifications.length === 0 || Math.random() < 0.3) { // 30% chance for a general tip
-    possibleNotifications.push({ type: 'general' });
+  // Add a transaction notification if transactions exist
+  if (transactions.length > 0) {
+    const randomTransaction = transactions[Math.floor(Math.random() * transactions.length)];
+    possibleNotifications.push({ type: 'transaction', item: randomTransaction });
   }
 
+  // Always add a general tip as an option
+  possibleNotifications.push({ type: 'general' });
+
+  // Select a random notification type from the possibilities
   const selectedNotification = possibleNotifications[Math.floor(Math.random() * possibleNotifications.length)];
 
   let prompt = '';
   let notificationType = selectedNotification.type;
   let message = '';
 
+  const userContext = `Context for AI: User has ${todos.length} tasks, ${events.length} events. Remaining budget: ₦${remainingBudget.toLocaleString()}.`;
+
   switch (selectedNotification.type) {
     case 'todo':
       const todo = selectedNotification.item;
-      prompt = `As Theora, create a short, urgent notification (1-2 sentences) for a high-priority todo: "${todo.title}" due ${getRelativeTime(todo.dueDate)}. Encourage immediate action.`;
+      prompt = `As Theora, write a short, direct notification (1-2 sentences) about this task: "${todo.title}" (Priority: ${todo.priority}). Reference their budget (₦${remainingBudget.toLocaleString()}) or task count (${todos.length}) to add context. Be specific. ${userContext}`;
       break;
     case 'event':
       const event = selectedNotification.item;
-      prompt = `As Theora, create a short, timely notification (1-2 sentences) for an upcoming event: "${event.title}" at ${event.time || 'All day'} on ${formatDate(event.date)}. Remind the user to prepare.`;
+      prompt = `As Theora, write a short, direct notification (1-2 sentences) for this event: "${event.title}" on ${event.date}. State how much budget is left (₦${remainingBudget.toLocaleString()}) and remind them to plan accordingly. Be specific. ${userContext}`;
       break;
     case 'budget':
-      prompt = `As Theora, create a short, cautionary notification (1-2 sentences) about low budget. User has ₦${budget.limit - budget.spent} remaining. Advise careful spending.`;
+      prompt = `As Theora, write a short, direct notification (1-2 sentences) about the user's budget. State they have ₦${selectedNotification.item.remaining.toLocaleString()} left. Mention their total number of tasks (${todos.length}) as something to focus on. ${userContext}`;
+      break;
+    case 'transaction':
+      const transaction = selectedNotification.item;
+      prompt = `As Theora, write a short, direct notification (1-2 sentences) commenting on a user transaction: ₦${transaction.amount} on ${transaction.category}. Give a specific, brief opinion on this spending and state their remaining budget (₦${remainingBudget.toLocaleString()}). ${userContext}`;
       break;
     case 'general':
     default:
-      prompt = `As Theora, create a short, motivational productivity tip (1-2 sentences) for a student/young professional.`;
+      prompt = `As Theora, write a short, motivational tip (1-2 sentences). Directly reference one piece of user data: remaining budget (₦${remainingBudget.toLocaleString()}), number of tasks (${todos.length}), or number of events (${events.length}). Make the tip highly specific to that data point. ${userContext}`;
       notificationType = 'general';
       break;
   }
 
   try {
-    message = await generateAIResponse(prompt, { maxTokens: 50 }); // Short response
+    message = await generateAIResponse(prompt, { maxTokens: 80 });
   } catch (error) {
     console.error('AI Notification Error:', error);
     message = 'Stay productive! Theora is here to help.';
