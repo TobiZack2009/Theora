@@ -30,3 +30,8 @@ export function toggleTheme() {
   localStorage.setItem(themeKey, newTheme);
   applyTheme(newTheme);
 }
+
+export function getTheme() {
+  const html = document.documentElement;
+  return html.hasAttribute('data-theme') ? 'dark' : 'light';
+}

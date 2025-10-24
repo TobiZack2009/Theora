@@ -3,7 +3,7 @@ import { initTheme, toggleTheme } from '../utils/theme.js';
 import { stopNotificationService } from '../services/notificationService.js'; // Import stopNotificationService
 
 function renderNavItems() {
-  const views = ['dashboard', 'todos', 'calendar', 'budget'];
+  const views = ['dashboard', 'todos', 'calendar', 'budget', 'aiChat'];
   return views.map(view => `
     <button 
       data-view="${view}" 
@@ -197,6 +197,7 @@ function getNotificationIcon(type) {
     case 'todo': return '📝';
     case 'event': return '📅';
     case 'budget': return '💰';
+    case 'aiChat': return '🤖';
     default: return '💡';
   }
 }

@@ -184,3 +184,113 @@
   height: 40px;
   margin-left: 0px;
 }
+
+/* AI Chat Specific Styles */
+.ai-chat-layout {
+  height: calc(100vh - 180px); /* Adjust based on header/nav height */
+}
+
+.chat-sidebar {
+  min-width: 200px;
+}
+
+.chat-messages > div {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.chat-messages > div > span {
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+/* User message styling */
+.chat-messages > div.user-message {
+  justify-content: flex-end;
+}
+
+/* AI message styling */
+.chat-messages > div.ai-message {
+  justify-content: flex-start;
+}
+
+.chat-messages > div.ai-message > span {
+  background-color: var(--bg-secondary); /* Use secondary background for AI */
+  color: var(--text-primary);
+}
+
+/* Loading Indicator (Dot Pulse) */
+.dot-pulse {
+  position: relative;
+  left: -9999px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--primary-blue);
+  color: var(--primary-blue);
+  box-shadow: 9999px 0 0 -5px;
+  animation: dotPulse 1.5s infinite linear;
+  animation-delay: .25s;
+}
+
+.dot-pulse::before, .dot-pulse::after {
+  content: '';
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--primary-blue);
+  color: var(--primary-blue);
+}
+
+.dot-pulse::before {
+  box-shadow: 9984px 0 0 -5px;
+  animation: dotPulseBefore 1.5s infinite linear;
+  animation-delay: 0s;
+}
+
+.dot-pulse::after {
+  box-shadow: 10014px 0 0 -5px;
+  animation: dotPulseAfter 1.5s infinite linear;
+  animation-delay: .5s;
+}
+
+@keyframes dotPulseBefore {
+  0% {
+    box-shadow: 9984px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 9984px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 9984px 0 0 -5px;
+  }
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow: 9999px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 9999px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 9999px 0 0 -5px;
+  }
+}
+
+@keyframes dotPulseAfter {
+  0% {
+    box-shadow: 10014px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 10014px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 10014px 0 0 -5px;
+  }
+}

@@ -25,7 +25,9 @@ class AppState {
     });
     this.currentView = 'dashboard';
     this.todoFilter = 'all'; // New property for todo filtering
-    this.notifications = loadFromLocal(StorageKeys.NOTIFICATIONS, []); // New property for notifications
+    this.notifications = loadFromLocal(StorageKeys.NOTIFICATIONS, []);
+    this.chatSessions = loadFromLocal(StorageKeys.CHAT_SESSIONS, []); // Stores multiple chat sessions
+    this.currentChatSessionId = null; // Tracks the currently active chat session
     this.listeners = new Map();
   }
 
@@ -206,6 +208,63 @@ class AppState {
       this.emit('notificationsChanged', this.notifications);
     }
   }
+
+  addChatMessage(sessionId, sender, message) {
+    const session = this.chatSessions.find(s => s.id === sessionId);
+    if (session) {
+      const newMessage = { sender, message, timestamp: new Date().toISOString() };
+      session.messages.push(newMessage);
+      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      this.emit('chatSessionsChanged', this.chatSessions);
+      this.emit('currentChatSessionChanged', session);
+    } else {
+      console.warn(`Chat session with ID ${sessionId} not found.`);
+    }
+  }
+
+  addChatSession(title) {
+    const newSession = {
+      id: generateId(),
+      title: title || `Chat ${this.chatSessions.length + 1}`,
+      messages: [],
+      createdAt: new Date().toISOString(),
+    };
+    this.chatSessions.push(newSession);
+    saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+    this.setCurrentChatSession(newSession.id);
+    this.emit('chatSessionsChanged', this.chatSessions);
+    return newSession;
+  }
+
+  deleteChatSession(id) {
+    this.chatSessions = this.chatSessions.filter(s => s.id !== id);
+    saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+    if (this.currentChatSessionId === id) {
+      this.currentChatSessionId = this.chatSessions.length > 0 ? this.chatSessions[0].id : null;
+    }
+    this.emit('chatSessionsChanged', this.chatSessions);
+    this.emit('currentChatSessionChanged', this.getCurrentChatSession());
+  }
+
+  setCurrentChatSession(id) {
+    if (this.chatSessions.some(s => s.id === id)) {
+      this.currentChatSessionId = id;
+      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      this.emit('currentChatSessionChanged', this.getCurrentChatSession());
+    } else {
+      console.warn(`Attempted to set non-existent chat session ID: ${id}`);
+    }
+  }
+
+  getChatSession(id) {
+    return this.chatSessions.find(s => s.id === id);
+  }
+
+  getCurrentChatSession() {
+    return this.chatSessions.find(s => s.id === this.currentChatSessionId);
+  }
 }
 
 export const appState = new AppState();
+
+

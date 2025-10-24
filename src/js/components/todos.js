@@ -39,7 +39,7 @@ export function renderTodos(container) {
   container.innerHTML = `
     <div class="fade-in">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-3xl font-bold">My Todos</h2>
+        <h2 class="text-3xl font-bold">My To-do</h2>
         <button id="addTodoBtn" class="btn btn-primary">+ Add Todo</button>
       </div>
 
@@ -47,7 +47,7 @@ export function renderTodos(container) {
 
       <!-- AI Time Management Advice -->
       <div id="aiTimeManagementAdvice" class="card mb-6">
-        <h3 class="text-xl font-semibold mb-4">AI Time Management Advice</h3>
+        <h3 class="text-xl font-semibold mb-4">Our Advice</h3>
         <p id="aiAdviceContent" class="text-text-secondary">Loading personalized advice...</p>
       </div>
 
