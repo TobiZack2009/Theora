@@ -1,6 +1,6 @@
 import { appState } from '../state/appState.js';
 import { generateId, formatCurrency, formatDate, getCategoryIcon } from '../utils/helpers.js';
-import { analyzeBudget } from '../services/bedrock.js';
+import { analyzeBudget } from '../services/ai.js';
 
 export function renderBudget(container) {
   const totalSpent = appState.transactions.reduce((sum, t) => sum + t.amount, 0);

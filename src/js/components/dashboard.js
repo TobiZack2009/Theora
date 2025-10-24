@@ -1,6 +1,6 @@
 import { appState } from '../state/appState.js';
 import { formatCurrency, getRelativeTime, isToday } from '../utils/helpers.js';
-import { generateDailyBrief } from '../services/bedrock.js';
+import { generateDailyBrief } from '../services/ai.js';
 
 export function renderDashboard(container) {
   const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));

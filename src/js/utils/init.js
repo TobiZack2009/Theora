@@ -1,5 +1,6 @@
 import { renderApp } from '../components/app.js';
 import { appState } from '../state/appState.js';
+import { initAIClients } from '../services/ai.js';
 
 export function initializeApp() {
   const appContainer = document.getElementById('app');
@@ -8,6 +9,9 @@ export function initializeApp() {
     console.error('App container not found');
     return;
   }
+
+  // Initialize AI clients
+  initAIClients();
 
   const existingUser = appState.user;
   if (!existingUser) {

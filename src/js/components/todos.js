@@ -1,6 +1,6 @@
 import { appState } from '../state/appState.js';
 import { generateId, formatDate, getRelativeTime } from '../utils/helpers.js';
-import { prioritizeTodos } from '../services/bedrock.js';
+import { prioritizeTodos } from '../services/ai.js';
 import { renderDashboard } from './dashboard.js';
 
 export function renderTodos(container) {
