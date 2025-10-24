@@ -206,10 +206,16 @@ async function loadDailyBrief(container) {
   const briefElement = container.querySelector('#dailyBrief');
   if (!briefElement) return;
 
+  if (appState.aiMessages.dailyBrief) {
+    briefElement.textContent = appState.aiMessages.dailyBrief;
+    return;
+  }
+
   try {
     const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));
     const todayEvents = appState.events.filter(e => isToday(e.date));
     const brief = await generateDailyBrief(todayTodos, appState.getRemainingBudget(), todayEvents);
+    appState.setAIMessage('dailyBrief', brief);
     briefElement.textContent = brief;
   } catch (error) {
     briefElement.textContent = 'Good morning! Ready to crush your goals today? 💪';
