@@ -133,3 +133,14 @@
 .flip-card-back {
   transform: rotateY(180deg);
 }
+
+.filter-btn{
+  border-radius: 30px;
+  padding: 10px
+}
+
+.nav-logo{
+  width: 40px;
+  height: 40px;
+  margin-left: 0px;
+}

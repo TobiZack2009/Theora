@@ -1,4 +1,5 @@
 import { loadFromLocal, saveToLocal, StorageKeys } from '../utils/storage.js';
+import { marked } from 'marked';
 
 class AppState {
   constructor() {
@@ -19,9 +20,10 @@ class AppState {
     this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
       dailyBrief: null,
       budgetInsight: null,
-      todoPrioritization: null,
+      timeManagementAdvice: null, // New AI message type
     });
     this.currentView = 'dashboard';
+    this.todoFilter = 'all'; // New property for todo filtering
     this.listeners = new Map();
   }
 
@@ -98,6 +100,7 @@ class AppState {
     this.todos.push(todo);
     saveToLocal(StorageKeys.TODOS, this.todos);
     this.setAIMessage('dailyBrief', null);
+    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
     this.emit('todosChanged', this.todos);
   }
 
@@ -107,6 +110,7 @@ class AppState {
       this.todos[index] = { ...this.todos[index], ...updates };
       saveToLocal(StorageKeys.TODOS, this.todos);
       this.setAIMessage('dailyBrief', null);
+      this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
       this.emit('todosChanged', this.todos);
     }
   }
@@ -115,6 +119,7 @@ class AppState {
     this.todos = this.todos.filter(t => t.id !== id);
     saveToLocal(StorageKeys.TODOS, this.todos);
     this.setAIMessage('dailyBrief', null);
+    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
     this.emit('todosChanged', this.todos);
   }
 
@@ -122,6 +127,7 @@ class AppState {
     this.events.push({ ...event, recurrence: event.recurrence || 'none' });
     saveToLocal(StorageKeys.EVENTS, this.events);
     this.setAIMessage('dailyBrief', null);
+    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
     this.emit('eventsChanged', this.events);
   }
 
@@ -131,6 +137,7 @@ class AppState {
       this.events[index] = { ...this.events[index], ...updates };
       saveToLocal(StorageKeys.EVENTS, this.events);
       this.setAIMessage('dailyBrief', null);
+      this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
       this.emit('eventsChanged', this.events);
     }
   }
@@ -139,6 +146,7 @@ class AppState {
     this.events = this.events.filter(e => e.id !== id);
     saveToLocal(StorageKeys.EVENTS, this.events);
     this.setAIMessage('dailyBrief', null);
+    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
     this.emit('eventsChanged', this.events);
   }
 
@@ -146,6 +154,7 @@ class AppState {
     this.transactions.push(transaction);
     saveToLocal(StorageKeys.TRANSACTIONS, this.transactions);
     this.setAIMessage('dailyBrief', null);
+    this.setAIMessage('budgetInsight', null); // Clear budget insight
     this.emit('transactionsChanged', this.transactions);
     this.emit('budgetChanged', this.budget);
   }
@@ -153,6 +162,7 @@ class AppState {
   setBudget(budgetData) {
     this.budget = { ...this.budget, ...budgetData };
     saveToLocal(StorageKeys.BUDGET, this.budget);
+    this.setAIMessage('budgetInsight', null); // Clear budget insight
     this.emit('budgetChanged', this.budget);
   }
 
@@ -168,11 +178,12 @@ class AppState {
     this.emit('settingsChanged', this.settings);
   }
 
+
   setAIMessage(type, message) {
     if (this.aiMessages.hasOwnProperty(type)) {
-      this.aiMessages[type] = message;
-      saveToLocal(StorageKeys.AI_MESSAGES, this.aiMessages);
-      this.emit('aiMessagesChanged', this.aiMessages);
+      this.aiMessages[type] = marked.parse(message); // Parse only the message
+      saveToLocal(StorageKeys.AI_MESSAGES, this.aiMessages); // Save the updated object
+      this.emit('aiMessagesChanged', this.aiMessages); // Emit the updated object
     } else {
       console.warn(`Attempted to set unknown AI message type: ${type}`);
     }

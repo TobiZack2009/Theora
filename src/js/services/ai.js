@@ -2,6 +2,8 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import { appState } from '../state/appState.js';
 import { getRelativeTime } from '../utils/helpers.js';
 
+
+
 // --- Constants ---
 const BEDROCK_MODEL_ID = 'us.deepseek.r1-v1:0';
 const AI_PROVIDER = import.meta.env.AI_PROVIDER;
@@ -233,7 +235,7 @@ Here's the user's situation:
 - **Urgent Tasks (${todos.length}):**
   ${todos.map(t => `- "${t.title}" (Due: ${getRelativeTime(t.dueDate)})`).join('\n  ')}
 - **Today's Events (${todayEvents.length}):**
-  ${todayEvents.map(e => `- "${e.title}" at ${e.time || 'All day'}`).join('\n  ')}
+  ${todayEvents.map(e => `- "${e.title}" at ${e.time || 'All day'}`).join('\n  ')}}
 
 Your tasks:
 1.  **Acknowledge the user's hustle.**
@@ -245,5 +247,28 @@ Example: "Morning! You've got a full plate today. That "${todos[0]?.title || 'as
 
   const result = await generateAIResponse(prompt, { maxTokens: 250 });
   appState.setAIMessage('dailyBrief', result);
+  return result;
+}
+
+export async function generateTimeManagementAdvice(todos, events) {
+  // Combine todos and events for context
+  const allItems = [
+    ...todos.map(t => ({ type: 'todo', title: t.title, priority: t.priority, dueDate: t.dueDate, completed: t.completed })),
+    ...events.map(e => ({ type: 'event', title: e.title, date: e.date, time: e.time, recurrence: e.recurrence }))
+  ];
+
+  const prompt = `As Theora, an AI productivity and financial copilot, provide concise time management advice (about 3 paragraphs) to a Nigerian student or young professional. Base your advice on the following current tasks and events:
+
+${JSON.stringify(allItems, null, 2)}
+
+Your advice should focus on:
+1.  **Key Priorities:** Identify the most critical tasks/events based on urgency and importance.
+2.  **Actionable Steps:** Suggest immediate, practical steps for managing their time effectively today/this week.
+3.  **Theora's Role:** Briefly mention how Theora can assist in implementing these strategies.
+
+Ensure the tone is encouraging, culturally relevant (e.g., acknowledging "hustle"), and highly actionable. The response should be well-structured into about 3 paragraphs.`
+
+  const result = await generateAIResponse(prompt, { maxTokens: 300 }); // Adjusted maxTokens for ~3 paragraphs
+  appState.setAIMessage('timeManagementAdvice', result);
   return result;
 }

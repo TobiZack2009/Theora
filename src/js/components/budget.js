@@ -27,7 +27,7 @@ export function renderBudget(container) {
         <div class="flip-card" id="virtualCard">
           <div class="flip-card-inner">
             <!-- Card Front -->
-            <div class="flip-card-front absolute inset-0">
+              <div class="flip-card-front">
               <div class="card bg-gradient-to-br from-gradient-start to-gradient-end text-white p-6 cursor-pointer" style="aspect-ratio: 1.586;">
                 <div class="flex items-center justify-between mb-8">
                   <span class="text-2xl">💳</span>
@@ -51,7 +51,7 @@ export function renderBudget(container) {
             </div>
             
             <!-- Card Back - Transaction Entry -->
-            <div class="flip-card-back absolute inset-0">
+              <div class="flip-card-back">
               <div class="card bg-gradient-to-br from-bg-secondary to-bg-primary text-white p-6" style="aspect-ratio: 1.586;">
                 <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
                 <form id="quickTransactionForm" class="space-y-3">
@@ -84,7 +84,6 @@ export function renderBudget(container) {
       <div class="card mb-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-semibold">Budget Overview</h3>
-          <button id="getAIInsights" class="btn btn-secondary">🤖 AI Insights</button>
         </div>
         
         <div class="mb-6">
@@ -101,8 +100,8 @@ export function renderBudget(container) {
           </div>
         </div>
 
-        <div id="aiInsights" class="hidden p-4 bg-bg-primary rounded-lg mb-4">
-          <p class="text-sm text-text-secondary"></p>
+        <div id="aiInsights" class="p-4 bg-bg-primary rounded-lg mb-4">
+          <p class="text-sm text-text-secondary">Loading budget insights...</p>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
@@ -249,6 +248,26 @@ export function renderBudget(container) {
   `;
 
   setupBudgetListeners(container);
+  loadBudgetInsights(container);
+}
+
+async function loadBudgetInsights(container) {
+  const aiInsightsElement = container.querySelector('#aiInsights p');
+  if (!aiInsightsElement) return;
+
+  if (appState.aiMessages.budgetInsight) {
+    aiInsightsElement.innerHTML = appState.aiMessages.budgetInsight;
+    return;
+  }
+
+  try {
+    const insights = await analyzeBudget(appState.transactions, appState.budget.limit);
+    appState.setAIMessage('budgetInsight', insights);
+    aiInsightsElement.innerHTML = insights;
+  } catch (error) {
+    console.error('AI Insights Error:', error);
+    aiInsightsElement.textContent = 'Could not get AI insights.';
+  }
 }
 
 function setupBudgetListeners(container) {
@@ -340,24 +359,6 @@ function setupBudgetListeners(container) {
     closeTransactionModalAction();
   });
 
-  const getAIInsights = container.querySelector('#getAIInsights');
-  const aiInsights = container.querySelector('#aiInsights');
-  getAIInsights?.addEventListener('click', async () => {
-    getAIInsights.disabled = true;
-    getAIInsights.textContent = '🤖 Analyzing...';
-    
-    try {
-      const insights = await analyzeBudget(appState.transactions, appState.budget.limit);
-      aiInsights.querySelector('p').textContent = insights;
-      aiInsights.classList.remove('hidden');
-    } catch (error) {
-      console.error('AI Insights Error:', error);
-      aiInsights.querySelector('p').textContent = 'Could not get AI insights.';
-      aiInsights.classList.remove('hidden');
-    }
-    
-    getAIInsights.disabled = false;
-    getAIInsights.textContent = '🤖 AI Insights';
-  });
+  
 }
 

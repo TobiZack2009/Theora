@@ -1,10 +1,40 @@
 import { appState } from '../state/appState.js';
-import { generateId, getRelativeTime } from '../utils/helpers.js';
-import { prioritizeTodos } from '../services/ai.js';
+import { generateId, getRelativeTime, isToday } from '../utils/helpers.js';
+import { generateTimeManagementAdvice } from '../services/ai.js';
 
 export function renderTodos(container) {
-  const incompleteTodos = appState.todos.filter(t => !t.completed);
+  let filteredTodos = appState.todos.filter(t => !t.completed);
   const completedTodos = appState.todos.filter(t => t.completed);
+
+  // Apply filter based on appState.todoFilter
+  switch (appState.todoFilter) {
+    case 'today':
+      filteredTodos = filteredTodos.filter(t => isToday(t.dueDate));
+      break;
+    case 'week':
+      filteredTodos = filteredTodos.filter(t => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        return t.dueDate && new Date(t.dueDate) >= oneWeekAgo;
+      });
+      break;
+    case 'month':
+      filteredTodos = filteredTodos.filter(t => {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        return t.dueDate && new Date(t.dueDate) >= oneMonthAgo;
+      });
+      break;
+    case 'high':
+      filteredTodos = filteredTodos.filter(t => t.priority === 'high');
+      break;
+    case 'all':
+    default:
+      // No additional filtering needed
+      break;
+  }
+
+  const incompleteTodos = filteredTodos;
 
   container.innerHTML = `
     <div class="fade-in">
@@ -13,21 +43,21 @@ export function renderTodos(container) {
         <button id="addTodoBtn" class="btn btn-primary">+ Add Todo</button>
       </div>
 
+      
+
+      <!-- AI Time Management Advice -->
+      <div id="aiTimeManagementAdvice" class="card mb-6">
+        <h3 class="text-xl font-semibold mb-4">AI Time Management Advice</h3>
+        <p id="aiAdviceContent" class="text-text-secondary">Loading personalized advice...</p>
+      </div>
+
       <!-- Filters -->
-      <div class="card mb-6">
-        <div class="flex flex-wrap gap-2 mb-4">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="today">Today</button>
-          <button class="filter-btn" data-filter="week">This Week</button>
-          <button class="filter-btn" data-filter="month">This Month</button>
-          <button class="filter-btn" data-filter="high">High Priority</button>
-        </div>
-        <button id="aiSortBtn" class="btn btn-secondary text-sm w-full">
-          🤖 AI Smart Sort
-        </button>
-        <div id="aiSuggestion" class="hidden mt-4 p-4 bg-bg-primary rounded-lg">
-          <p class="text-sm text-text-secondary"></p>
-        </div>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="today">Today</button>
+        <button class="filter-btn" data-filter="week">This Week</button>
+        <button class="filter-btn" data-filter="month">This Month</button>
+        <button class="filter-btn" data-filter="high">High Priority</button>
       </div>
 
       <!-- Incomplete Todos -->
@@ -106,6 +136,26 @@ export function renderTodos(container) {
   `;
 
   setupTodosListeners(container);
+  loadTimeManagementAdvice(container);
+}
+
+async function loadTimeManagementAdvice(container) {
+  const adviceElement = container.querySelector('#aiAdviceContent');
+  if (!adviceElement) return;
+
+  if (appState.aiMessages.timeManagementAdvice) {
+    adviceElement.textContent = appState.aiMessages.timeManagementAdvice;
+    return;
+  }
+
+  try {
+    const advice = await generateTimeManagementAdvice(appState.todos, appState.events);
+    appState.setAIMessage('timeManagementAdvice', advice);
+    adviceElement.textContent = advice;
+  } catch (error) {
+    console.error('AI Time Management Advice Error:', error);
+    adviceElement.textContent = 'Could not generate time management advice.';
+  }
 }
 
 function renderTodoItem(todo) {
@@ -201,23 +251,23 @@ function setupTodosListeners(container) {
     }
   });
 
-  const aiSortBtn = container.querySelector('#aiSortBtn');
-  const aiSuggestion = container.querySelector('#aiSuggestion');
-  aiSortBtn?.addEventListener('click', async () => {
-    aiSortBtn.disabled = true;
-    aiSortBtn.textContent = '🤖 Analyzing...';
-    
-    try {
-      const suggestion = await prioritizeTodos(appState.todos.filter(t => !t.completed));
-      aiSuggestion.querySelector('p').textContent = suggestion;
-      aiSuggestion.classList.remove('hidden');
-    } catch (error) {
-      console.error('AI Sort Error:', error);
-      aiSuggestion.querySelector('p').textContent = 'Could not get AI suggestion.';
-      aiSuggestion.classList.remove('hidden');
+  const filterButtons = container.querySelectorAll('.filter-btn');
+  filterButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const filter = e.target.dataset.filter;
+      appState.todoFilter = filter;
+      appState.emit('todosChanged', appState.todos); // Re-render todos with new filter
+    });
+  });
+
+  // Highlight active filter button
+  filterButtons.forEach(button => {
+    if (button.dataset.filter === appState.todoFilter) {
+      button.classList.add('active', 'btn-primary');
+      button.classList.remove('btn-secondary');
+    } else {
+      button.classList.remove('active', 'btn-primary');
+      button.classList.add('btn-secondary');
     }
-    
-    aiSortBtn.disabled = false;
-    aiSortBtn.textContent = '🤖 AI Smart Sort';
   });
 }
