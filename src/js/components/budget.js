@@ -27,7 +27,7 @@ export function renderBudget(container) {
         <div class="flip-card" id="virtualCard">
           <div class="flip-card-inner">
             <!-- Card Front -->
-              <div class="flip-card-front">
+              <div class="flip-card-front absolute inset-0">
               <div class="card bg-gradient-to-br from-gradient-start to-gradient-end text-white p-6 cursor-pointer" style="aspect-ratio: 1.586;">
                 <div class="flex items-center justify-between mb-8">
                   <span class="text-2xl">💳</span>
@@ -51,7 +51,7 @@ export function renderBudget(container) {
             </div>
             
             <!-- Card Back - Transaction Entry -->
-              <div class="flip-card-back">
+              <div class="flip-card-back absolute inset-0">
               <div class="card bg-gradient-to-br from-bg-secondary to-bg-primary text-white p-6" style="aspect-ratio: 1.586;">
                 <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
                 <form id="quickTransactionForm" class="space-y-3">
@@ -81,7 +81,7 @@ export function renderBudget(container) {
       </div>
 
       <!-- Budget Overview -->
-      <div class="card mb-6">
+      <div class="card mb-6" style="margin-top: 275px;"> <!--The margin is there so the card dosen't overlap the divs-->
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-semibold">Budget Overview</h3>
         </div>
