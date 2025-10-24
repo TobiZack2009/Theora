@@ -148,7 +148,7 @@ async function loadDailyBrief(container) {
   if (!briefElement) return;
 
   if (appState.aiMessages.dailyBrief) {
-    briefElement.textContent = appState.aiMessages.dailyBrief;
+    briefElement.innerHTML = appState.aiMessages.dailyBrief;
     return;
   }
 
@@ -159,8 +159,8 @@ async function loadDailyBrief(container) {
     const todayEvents = appState.getEventsForDateRange(todayStr, todayStr);
     const brief = await generateDailyBrief(todayTodos, appState.getRemainingBudget(), todayEvents);
     appState.setAIMessage('dailyBrief', brief);
-    briefElement.textContent = brief;
+    briefElement.innerHTML = brief;
   } catch (error) {
-    briefElement.textContent = 'Good morning! Ready to crush your goals today? 💪';
+    briefElement.innerHTML = 'Good morning! Ready to crush your goals today? 💪';
   }
 }

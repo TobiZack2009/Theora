@@ -97,7 +97,7 @@ export function renderAuthScreen(container) {
       appState.setUser(userCredential.user);
       appState.setView('dashboard');
     } catch (error) {
-      errorDiv.textContent = 'Invalid email or password. Please try again.';
+      errorDiv.innerHTML = 'Invalid email or password. Please try again.';
       errorDiv.classList.remove('hidden');
     }
   });
@@ -114,7 +114,7 @@ export function renderAuthScreen(container) {
       appState.setUser({ ...userCredential.user, displayName: name });
       appState.setView('dashboard');
     } catch (error) {
-      errorDiv.textContent = error.message || 'Failed to create account. Please try again.';
+      errorDiv.innerHTML = error.message || 'Failed to create account. Please try again.';
       errorDiv.classList.remove('hidden');
     }
   });

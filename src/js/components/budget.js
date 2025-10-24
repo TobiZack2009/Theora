@@ -266,7 +266,7 @@ async function loadBudgetInsights(container) {
     aiInsightsElement.innerHTML = insights;
   } catch (error) {
     console.error('AI Insights Error:', error);
-    aiInsightsElement.textContent = 'Could not get AI insights.';
+    aiInsightsElement.innerHTML = 'Could not get AI insights.';
   }
 }
 

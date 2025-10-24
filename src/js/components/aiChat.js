@@ -8,7 +8,7 @@ export function renderAIChat(container) {
     <div class="ai-chat-layout flex h-[calc(100vh-180px)]">
       <!-- Chat Sessions Sidebar -->
       <div class="chat-sidebar w-64 bg-bg-secondary border-r border-border-color p-4 overflow-y-auto">
-        <button id="new-chat-btn" class="w-full bg-primary-blue text-white py-2 rounded-lg mb-4 hover:bg-primary-blue-dark transition-colors duration-200">
+        <button id="new-chat-btn" class="w-full bg-primary-blue text-grey py-2 rounded-lg mb-4 hover:bg-primary-blue-dark transition-colors duration-200">
           + New Chat
         </button>
         <div id="chat-sessions-list">
@@ -75,11 +75,13 @@ export function renderAIChat(container) {
     let textClass = '';
 
     if (sender === 'user') {
-      messageClass += ' ml-auto bg-primary-blue'; // Align user messages to the right, primary blue background
+      messageClass += ' ml-auto'; // Align user messages to the right
+      messageElement.style.backgroundColor = `rgba(var(--primary-blue-rgb), 0.8)`;
       textClass = 'text-white'; // White text for user messages
     } else { // AI messages
       messageClass += ' mr-auto'; // Align AI messages to the left
-      textClass = ' text-text-primary'; // Dynamically changing background and text color
+      messageElement.style.backgroundColor = `rgba(var(--bg-secondary-rgb), 0.8)`;
+      textClass = 'text-text-primary'; // Dynamically changing text color
     }
 
     messageElement.className = messageClass;
@@ -92,11 +94,11 @@ export function renderAIChat(container) {
     chatMessages.innerHTML = ''; // Clear existing messages
     const currentSession = appState.getCurrentChatSession();
     if (currentSession) {
-      currentChatTitle.textContent = currentSession.title;
+      currentChatTitle.innerHTML = currentSession.title;
       deleteChatBtn.classList.remove('hidden');
       currentSession.messages.forEach(msg => appendMessage(msg.sender, msg.message));
     } else {
-      currentChatTitle.textContent = 'No Chat Selected';
+      currentChatTitle.innerHTML = 'No Chat Selected';
       deleteChatBtn.classList.add('hidden');
     }
   }

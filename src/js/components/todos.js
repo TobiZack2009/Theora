@@ -144,17 +144,17 @@ async function loadTimeManagementAdvice(container) {
   if (!adviceElement) return;
 
   if (appState.aiMessages.timeManagementAdvice) {
-    adviceElement.textContent = appState.aiMessages.timeManagementAdvice;
+    adviceElement.innerHTML = appState.aiMessages.timeManagementAdvice;
     return;
   }
 
   try {
     const advice = await generateTimeManagementAdvice(appState.todos, appState.events);
     appState.setAIMessage('timeManagementAdvice', advice);
-    adviceElement.textContent = advice;
+    adviceElement.innerHTML = advice;
   } catch (error) {
     console.error('AI Time Management Advice Error:', error);
-    adviceElement.textContent = 'Could not generate time management advice.';
+    adviceElement.innerHTML = 'Could not generate time management advice.';
   }
 }
 

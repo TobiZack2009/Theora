@@ -185,7 +185,7 @@ class AppState {
 
   setAIMessage(type, message) {
     if (this.aiMessages.hasOwnProperty(type)) {
-      this.aiMessages[type] = marked.parse(message); // Parse only the message
+      this.aiMessages[type] = marked.parse(message || ""); // Parse only the message
       saveToLocal(StorageKeys.AI_MESSAGES, this.aiMessages); // Save the updated object
       this.emit('aiMessagesChanged', this.aiMessages); // Emit the updated object
     } else {
