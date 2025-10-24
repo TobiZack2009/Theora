@@ -1,5 +1,6 @@
 import { loadFromLocal, saveToLocal, StorageKeys } from '../utils/storage.js';
 import { marked } from 'marked';
+import { generateId } from '../utils/helpers.js'; // Import generateId
 
 class AppState {
   constructor() {
@@ -24,6 +25,7 @@ class AppState {
     });
     this.currentView = 'dashboard';
     this.todoFilter = 'all'; // New property for todo filtering
+    this.notifications = loadFromLocal(StorageKeys.NOTIFICATIONS, []); // New property for notifications
     this.listeners = new Map();
   }
 
@@ -186,6 +188,22 @@ class AppState {
       this.emit('aiMessagesChanged', this.aiMessages); // Emit the updated object
     } else {
       console.warn(`Attempted to set unknown AI message type: ${type}`);
+    }
+  }
+
+  addNotification(notification) {
+    const newNotification = { ...notification, id: generateId(), timestamp: new Date().toISOString(), read: false };
+    this.notifications.unshift(newNotification); // Add to the beginning
+    saveToLocal(StorageKeys.NOTIFICATIONS, this.notifications);
+    this.emit('notificationsChanged', this.notifications);
+  }
+
+  markNotificationAsRead(id) {
+    const index = this.notifications.findIndex(n => n.id === id);
+    if (index !== -1) {
+      this.notifications[index].read = true;
+      saveToLocal(StorageKeys.NOTIFICATIONS, this.notifications);
+      this.emit('notificationsChanged', this.notifications);
     }
   }
 }

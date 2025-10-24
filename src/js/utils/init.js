@@ -2,6 +2,7 @@ import { renderApp } from '../components/app.js';
 import { appState } from '../state/appState.js';
 import { initAIClients } from '../services/ai.js';
 import { initTheme } from './theme.js';
+import { startNotificationService } from '../services/notificationService.js'; // Import notification service
 
 export function initializeApp() {
   const appContainer = document.getElementById('app');
@@ -25,6 +26,7 @@ export function initializeApp() {
   }
   
   renderApp(appContainer);
+  startNotificationService(); // Start notification service
 
   console.log('Theora MVP initialized successfully! 🚀');
 }

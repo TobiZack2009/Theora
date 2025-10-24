@@ -6,7 +6,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'primary-blue': 'var(--primary-blue)',
+        'primary-blue': ({ opacityVariable, opacityValue }) => {
+          if (opacityValue !== undefined) {
+            return `rgba(var(--primary-blue), ${opacityValue})`;
+          }
+          if (opacityVariable !== undefined) {
+            return `rgba(var(--primary-blue), var(${opacityVariable}))`;
+          }
+          return 'rgb(var(--primary-blue))';
+        },
         'gradient-start': 'var(--gradient-start)',
         'gradient-end': 'var(--gradient-end)',
         'success': ({ opacityVariable, opacityValue }) => {

@@ -1,5 +1,6 @@
 import { appState } from '../state/appState.js';
 import { initTheme, toggleTheme } from '../utils/theme.js';
+import { stopNotificationService } from '../services/notificationService.js'; // Import stopNotificationService
 
 function renderNavItems() {
   const views = ['dashboard', 'todos', 'calendar', 'budget'];
@@ -28,6 +29,10 @@ export function renderLayout(container, viewRenderer) {
           </div>
           
           <div class="flex items-center space-x-4">
+            <button id="notification-bell" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-bg-primary relative">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 01-3 3H9a3 3 0 01-3-3v-1m6-10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+              <span id="notification-count" class="absolute top-1 right-1 bg-error text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+            </button>
             <button id="theme-toggle" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-bg-primary">
               <svg id="theme-icon-sun" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
               <svg id="theme-icon-moon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -60,6 +65,23 @@ export function renderLayout(container, viewRenderer) {
       <div id="ai-tip-card" class="ai-tip-card">
         <p id="ai-tip-message"></p>
       </div>
+
+      <!-- Notification Sidebar -->
+      <div id="notification-sidebar" class="fixed top-0 right-0 w-80 bg-bg-secondary h-full shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+        <div class="flex items-center justify-between p-4 border-b border-border-color">
+          <h3 class="text-xl font-semibold">Notifications</h3>
+          <button id="close-notification-sidebar" class="text-text-secondary hover:text-text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div id="notification-list" class="p-4 space-y-3 overflow-y-auto h-[calc(100%-60px)]">
+          <!-- Notifications will be rendered here -->
+          <p class="text-text-secondary text-center">No new notifications.</p>
+        </div>
+      </div>
+
+      <!-- Notification Popups Container -->
+      <div id="notification-popups" class="fixed bottom-4 right-4 space-y-3 z-50"></div>
     </div>
   `;
 
@@ -73,6 +95,7 @@ export function renderLayout(container, viewRenderer) {
   container.querySelector('#logoutBtn').addEventListener('click', () => {
     appState.setUser(null);
     appState.setView('auth');
+    stopNotificationService(); // Stop notification service on logout
   });
 
   container.querySelectorAll('.nav-item').forEach(item => {
@@ -81,6 +104,99 @@ export function renderLayout(container, viewRenderer) {
       if (view) appState.setView(view);
     });
   });
+
+  const notificationBell = container.querySelector('#notification-bell');
+  const notificationSidebar = container.querySelector('#notification-sidebar');
+  const closeNotificationSidebarBtn = container.querySelector('#close-notification-sidebar');
+
+  notificationBell?.addEventListener('click', () => {
+    notificationSidebar.classList.remove('translate-x-full');
+  });
+
+  closeNotificationSidebarBtn?.addEventListener('click', () => {
+    notificationSidebar.classList.add('translate-x-full');
+  });
   
   initTheme();
+  updateNotificationUI(); // Initial render of notifications
+
+  appState.subscribe('notificationsChanged', updateNotificationUI);
+}
+
+function updateNotificationUI() {
+  const notificationCountSpan = document.querySelector('#notification-count');
+  const notificationListDiv = document.querySelector('#notification-list');
+
+  const unreadNotifications = appState.notifications.filter(n => !n.read);
+  if (unreadNotifications.length > 0) {
+    notificationCountSpan.textContent = unreadNotifications.length;
+    notificationCountSpan.classList.remove('hidden');
+  } else {
+    notificationCountSpan.classList.add('hidden');
+  }
+
+  if (appState.notifications.length > 0) {
+    notificationListDiv.innerHTML = appState.notifications.map(n => `
+      <div class="notification-item ${n.type} ${n.read ? 'opacity-60' : ''}" data-id="${n.id}">
+        <span class="text-xl">${getNotificationIcon(n.type)}</span>
+        <div class="flex-1">
+          <p class="font-medium">${n.message}</p>
+          <p class="text-xs text-text-secondary">${new Date(n.timestamp).toLocaleString()}</p>
+        </div>
+        <button class="mark-read-btn text-text-secondary hover:text-text-primary" data-id="${n.id}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    `).join('');
+  } else {
+    notificationListDiv.innerHTML = '<p class="text-text-secondary text-center">No new notifications.</p>';
+  }
+
+  // Render popups for unread notifications
+  const notificationPopupsContainer = document.querySelector('#notification-popups');
+  notificationPopupsContainer.innerHTML = ''; // Clear previous popups
+
+  const latestUnreadNotification = appState.notifications.filter(n => !n.read)[0]; // Get only the latest unread
+
+  if (latestUnreadNotification) {
+    const n = latestUnreadNotification;
+    const popup = document.createElement('div');
+    popup.className = `notification-popup ${n.type}`;
+    popup.dataset.id = n.id;
+    popup.innerHTML = `
+      <span class="text-xl">${getNotificationIcon(n.type)}</span>
+      <div class="flex-1">
+        <p class="font-medium">${n.message}</p>
+          <p class="text-xs text-text-secondary">${new Date(n.timestamp).toLocaleTimeString()}</p>
+      </div>
+      <button class="mark-read-btn text-text-secondary hover:text-text-primary" data-id="${n.id}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    `;
+    notificationPopupsContainer.appendChild(popup);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      popup.classList.add('opacity-0', 'translate-x-full');
+      popup.addEventListener('transitionend', () => popup.remove());
+      appState.markNotificationAsRead(n.id); // Mark as read when it disappears
+    }, 5000);
+  }
+
+  // Add event listeners for mark-read buttons
+  document.querySelectorAll('.mark-read-btn').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const notificationId = e.currentTarget.dataset.id;
+      appState.markNotificationAsRead(notificationId);
+    });
+  });
+}
+
+function getNotificationIcon(type) {
+  switch (type) {
+    case 'todo': return '📝';
+    case 'event': return '📅';
+    case 'budget': return '💰';
+    default: return '💡';
+  }
 }

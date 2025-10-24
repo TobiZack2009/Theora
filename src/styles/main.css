@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --primary-blue: #00bcd4;
+    --primary-blue: 0, 188, 212; /* RGB values */
     --gradient-start: #00e0ff;
     --gradient-end: #00bfa6;
     --success: 76, 175, 80;
@@ -103,6 +103,46 @@
   }
   .ai-tip-card.show {
     @apply translate-y-0;
+  }
+
+  .notification-item {
+    @apply p-3 rounded-lg flex items-start space-x-3;
+  }
+
+  .notification-item.todo {
+    @apply bg-error/10 border border-error/20;
+  }
+
+  .notification-item.event {
+    @apply bg-primary-blue/10 border border-primary-blue/20;
+  }
+
+  .notification-item.budget {
+    @apply bg-warning/10 border border-warning/20;
+  }
+
+  .notification-item.general {
+    @apply bg-bg-primary border border-border-color;
+  }
+
+  .notification-popup {
+    @apply w-72 p-3 rounded-lg shadow-lg flex items-start space-x-3 transition-all duration-300 ease-in-out transform translate-x-0;
+  }
+
+  .notification-popup.todo {
+    @apply bg-error/10 border border-error/20;
+  }
+
+  .notification-popup.event {
+    @apply bg-primary-blue/10 border border-primary-blue/20;
+  }
+
+  .notification-popup.budget {
+    @apply bg-warning/10 border border-warning/20;
+  }
+
+  .notification-popup.general {
+    @apply bg-bg-primary border border-border-color;
   }
 }
 

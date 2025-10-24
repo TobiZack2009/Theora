@@ -272,3 +272,70 @@ Ensure the tone is encouraging, culturally relevant (e.g., acknowledging "hustle
   appState.setAIMessage('timeManagementAdvice', result);
   return result;
 }
+
+export async function generateNotification(budget, todos, events) {
+  const urgentTodos = todos.filter(t => t.priority === 'high' && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000)); // Due within 24 hours
+  const upcomingEvents = events.filter(e => new Date(e.date) >= new Date() && new Date(e.date) <= new Date(Date.now() + 24 * 60 * 60 * 1000)); // Within 24 hours
+  const lowBudget = budget.limit - budget.spent < budget.limit * 0.2; // Less than 20% remaining
+
+  const possibleNotifications = [];
+
+  // Bias towards urgent todos
+  if (urgentTodos.length > 0) {
+    for (let i = 0; i < Math.min(urgentTodos.length, 2); i++) { // Add up to 2 urgent todo notifications
+      possibleNotifications.push({ type: 'todo', item: urgentTodos[i] });
+    }
+  }
+
+  // Bias towards upcoming events
+  if (upcomingEvents.length > 0) {
+    for (let i = 0; i < Math.min(upcomingEvents.length, 2); i++) { // Add up to 2 upcoming event notifications
+      possibleNotifications.push({ type: 'event', item: upcomingEvents[i] });
+    }
+  }
+
+  // Bias towards low budget
+  if (lowBudget) {
+    possibleNotifications.push({ type: 'budget', item: budget });
+  }
+
+  // Add some general options if not enough urgent items
+  if (possibleNotifications.length === 0 || Math.random() < 0.3) { // 30% chance for a general tip
+    possibleNotifications.push({ type: 'general' });
+  }
+
+  const selectedNotification = possibleNotifications[Math.floor(Math.random() * possibleNotifications.length)];
+
+  let prompt = '';
+  let notificationType = selectedNotification.type;
+  let message = '';
+
+  switch (selectedNotification.type) {
+    case 'todo':
+      const todo = selectedNotification.item;
+      prompt = `As Theora, create a short, urgent notification (1-2 sentences) for a high-priority todo: "${todo.title}" due ${getRelativeTime(todo.dueDate)}. Encourage immediate action.`;
+      break;
+    case 'event':
+      const event = selectedNotification.item;
+      prompt = `As Theora, create a short, timely notification (1-2 sentences) for an upcoming event: "${event.title}" at ${event.time || 'All day'} on ${formatDate(event.date)}. Remind the user to prepare.`;
+      break;
+    case 'budget':
+      prompt = `As Theora, create a short, cautionary notification (1-2 sentences) about low budget. User has ₦${budget.limit - budget.spent} remaining. Advise careful spending.`;
+      break;
+    case 'general':
+    default:
+      prompt = `As Theora, create a short, motivational productivity tip (1-2 sentences) for a student/young professional.`;
+      notificationType = 'general';
+      break;
+  }
+
+  try {
+    message = await generateAIResponse(prompt, { maxTokens: 50 }); // Short response
+  } catch (error) {
+    console.error('AI Notification Error:', error);
+    message = 'Stay productive! Theora is here to help.';
+    notificationType = 'general';
+  }
+
+  return { message, type: notificationType };
+}
