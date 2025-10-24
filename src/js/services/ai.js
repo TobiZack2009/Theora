@@ -1,5 +1,6 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { appState } from '../state/appState.js';
+import { getRelativeTime } from '../utils/helpers.js';
 
 // --- Constants ---
 const BEDROCK_MODEL_ID = 'us.deepseek.r1-v1:0';
@@ -224,12 +225,25 @@ export async function generateDailyBrief(todos, budget, todayEvents) {
   if (appState.aiMessages.dailyBrief) {
     return appState.aiMessages.dailyBrief;
   }
-  const highPriorityCount = todos.filter(t => t.priority === 'high' && !t.completed).length;
-  const eventsCount = todayEvents.length;
-  
-  const prompt = `Create a brief daily motivational message for a Nigerian student/young professional. They have ${highPriorityCount} urgent tasks, ${eventsCount} events today, and ₦${budget} in their weekly budget. Keep it encouraging and practical.`;
-  
-  const result = await generateAIResponse(prompt, { maxTokens: 150 });
+
+  const prompt = `As Theora, a financial copilot for a Nigerian student, create a brief, motivational daily game plan.
+
+Here's the user's situation:
+- **Budget:** ₦${budget} remaining for the week.
+- **Urgent Tasks (${todos.length}):**
+  ${todos.map(t => `- "${t.title}" (Due: ${getRelativeTime(t.dueDate)})`).join('\n  ')}
+- **Today's Events (${todayEvents.length}):**
+  ${todayEvents.map(e => `- "${e.title}" at ${e.time || 'All day'}`).join('\n  ')}
+
+Your tasks:
+1.  **Acknowledge the user's hustle.**
+2.  **Analyze the tasks and events.** Point out the most critical item for today based on urgency, content, and remaining time.
+3.  **Provide a concrete, actionable suggestion.** What should they focus on first?
+4.  **Keep it concise and encouraging (2-3 sentences).**
+
+Example: "Morning! You've got a full plate today. That "${todos[0]?.title || 'assignment'}" is your top priority. Knock it out first, then you can focus on your meeting this afternoon. You've got this! Your budget is looking solid at ₦${budget}."`;
+
+  const result = await generateAIResponse(prompt, { maxTokens: 250 });
   appState.setAIMessage('dailyBrief', result);
   return result;
 }

@@ -64,6 +64,7 @@ class AppState {
   addTodo(todo) {
     this.todos.push(todo);
     saveToLocal(StorageKeys.TODOS, this.todos);
+    this.setAIMessage('dailyBrief', null);
     this.emit('todosChanged', this.todos);
   }
 
@@ -72,6 +73,7 @@ class AppState {
     if (index !== -1) {
       this.todos[index] = { ...this.todos[index], ...updates };
       saveToLocal(StorageKeys.TODOS, this.todos);
+      this.setAIMessage('dailyBrief', null);
       this.emit('todosChanged', this.todos);
     }
   }
@@ -79,12 +81,14 @@ class AppState {
   deleteTodo(id) {
     this.todos = this.todos.filter(t => t.id !== id);
     saveToLocal(StorageKeys.TODOS, this.todos);
+    this.setAIMessage('dailyBrief', null);
     this.emit('todosChanged', this.todos);
   }
 
   addEvent(event) {
     this.events.push(event);
     saveToLocal(StorageKeys.EVENTS, this.events);
+    this.setAIMessage('dailyBrief', null);
     this.emit('eventsChanged', this.events);
   }
 
@@ -93,6 +97,7 @@ class AppState {
     if (index !== -1) {
       this.events[index] = { ...this.events[index], ...updates };
       saveToLocal(StorageKeys.EVENTS, this.events);
+      this.setAIMessage('dailyBrief', null);
       this.emit('eventsChanged', this.events);
     }
   }
@@ -100,12 +105,14 @@ class AppState {
   deleteEvent(id) {
     this.events = this.events.filter(e => e.id !== id);
     saveToLocal(StorageKeys.EVENTS, this.events);
+    this.setAIMessage('dailyBrief', null);
     this.emit('eventsChanged', this.events);
   }
 
   addTransaction(transaction) {
     this.transactions.push(transaction);
     saveToLocal(StorageKeys.TRANSACTIONS, this.transactions);
+    this.setAIMessage('dailyBrief', null);
     this.emit('transactionsChanged', this.transactions);
     this.emit('budgetChanged', this.budget);
   }
