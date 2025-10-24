@@ -5,7 +5,9 @@ import { generateDailyBrief } from '../services/ai.js';
 export function renderDashboard(container) {
   const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));
   const highPriorityTodos = appState.todos.filter(t => !t.completed && t.priority === 'high');
-  const todayEvents = appState.events.filter(e => isToday(e.date));
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const todayEvents = appState.getEventsForDateRange(todayStr, todayStr);
   const weekSpending = appState.transactions
     .filter(t => {
       const date = new Date(t.date);
@@ -106,7 +108,7 @@ export function renderDashboard(container) {
                   <span class="text-2xl">${event.icon || '📌'}</span>
                   <div class="flex-1">
                     <p class="font-medium">${event.title}</p>
-                    <p class="text-sm text-text-secondary">${event.time || 'All day'}</p>
+                    <p class="text-sm text-text-secondary">${event.time || 'All day'} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
                   </div>
                 </div>
               `).join('')
@@ -152,7 +154,9 @@ async function loadDailyBrief(container) {
 
   try {
     const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));
-    const todayEvents = appState.events.filter(e => isToday(e.date));
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const todayEvents = appState.getEventsForDateRange(todayStr, todayStr);
     const brief = await generateDailyBrief(todayTodos, appState.getRemainingBudget(), todayEvents);
     appState.setAIMessage('dailyBrief', brief);
     briefElement.textContent = brief;

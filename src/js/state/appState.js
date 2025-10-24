@@ -30,6 +30,39 @@ class AppState {
     return this.budget.limit - totalSpent;
   }
 
+  getEventsForDateRange(startDate, endDate) {
+    const allExpandedEvents = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    this.events.forEach(event => {
+      if (event.recurrence === 'none') {
+        const eventDate = new Date(event.date);
+        if (eventDate >= start && eventDate <= end) {
+          allExpandedEvents.push(event);
+        }
+      } else {
+        let currentRecurrenceDate = new Date(event.date);
+        while (currentRecurrenceDate <= end) {
+          if (currentRecurrenceDate >= start) {
+            allExpandedEvents.push({ ...event, date: currentRecurrenceDate.toISOString().split('T')[0] });
+          }
+
+          if (event.recurrence === 'daily') {
+            currentRecurrenceDate.setDate(currentRecurrenceDate.getDate() + 1);
+          } else if (event.recurrence === 'weekly') {
+            currentRecurrenceDate.setDate(currentRecurrenceDate.getDate() + 7);
+          } else if (event.recurrence === 'monthly') {
+            currentRecurrenceDate.setMonth(currentRecurrenceDate.getMonth() + 1);
+          } else {
+            break; // Unknown recurrence type
+          }
+        }
+      }
+    });
+    return allExpandedEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
   subscribe(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
@@ -86,7 +119,7 @@ class AppState {
   }
 
   addEvent(event) {
-    this.events.push(event);
+    this.events.push({ ...event, recurrence: event.recurrence || 'none' });
     saveToLocal(StorageKeys.EVENTS, this.events);
     this.setAIMessage('dailyBrief', null);
     this.emit('eventsChanged', this.events);

@@ -84,11 +84,33 @@ export function renderCalendar(container, month = new Date().getMonth(), year = 
             </div>
             <input type="hidden" id="eventIcon" value="📅">
           </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Recurrence</label>
+            <select id="eventRecurrence" class="input">
+              <option value="none">None</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
           <div class="flex space-x-3">
             <button type="submit" class="btn btn-primary flex-1">Save Event</button>
             <button type="button" id="cancelEventBtn" class="btn btn-secondary">Cancel</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Daily Events Modal -->
+    <div id="dailyEventsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+      <div class="card max-w-md w-full">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-semibold" id="dailyEventsModalTitle">Events for </h2>
+          <button id="closeDailyEventsModal" class="text-text-secondary hover:text-text-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div id="dailyEventsList" class="space-y-3"></div>
       </div>
     </div>
   `;
@@ -116,7 +138,7 @@ function renderCalendarDays(month, year) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const dateStr = date.toISOString().split('T')[0];
-    const dayEvents = appState.events.filter(e => e.date === dateStr);
+    const dayEvents = appState.getEventsForDateRange(dateStr, dateStr); // Use new method
     const isTodayDate = today.toDateString() === date.toDateString();
     
     html += `
@@ -132,10 +154,10 @@ function renderCalendarDays(month, year) {
 
 function renderUpcomingEvents() {
   const today = new Date();
-  const upcoming = appState.events
-    .filter(e => new Date(e.date) >= today)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 10);
+  const threeMonthsLater = new Date();
+  threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+  const upcoming = appState.getEventsForDateRange(today.toISOString().split('T')[0], threeMonthsLater.toISOString().split('T')[0]);
 
   if (upcoming.length === 0) {
     return '<p class="text-text-secondary text-center py-8">No upcoming events 📅</p>';
@@ -147,7 +169,7 @@ function renderUpcomingEvents() {
         <span class="text-2xl">${event.icon || '📅'}</span>
         <div class="flex-1">
           <p class="font-medium">${event.title}</p>
-          <p class="text-sm text-text-secondary">${formatDate(event.date)} ${event.time ? `at ${event.time}` : ''}</p>
+          <p class="text-sm text-text-secondary">${formatDate(event.date)} ${event.time ? `at ${event.time}` : ''} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
         </div>
         <button class="delete-event text-error hover:opacity-70" data-event-id="${event.id}">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -164,17 +186,27 @@ function setupCalendarListeners(container) {
   const cancelEventBtn = eventModal.querySelector('#cancelEventBtn');
   const eventForm = eventModal.querySelector('#eventForm');
 
+  const dailyEventsModal = document.getElementById('dailyEventsModal');
+  const dailyEventsModalTitle = dailyEventsModal.querySelector('#dailyEventsModalTitle');
+  const dailyEventsList = dailyEventsModal.querySelector('#dailyEventsList');
+  const closeDailyEventsModal = dailyEventsModal.querySelector('#closeDailyEventsModal');
+
   addEventBtn?.addEventListener('click', () => {
     eventForm.reset();
     eventModal.querySelector('#eventId').value = '';
     eventModal.querySelector('#modalTitle').textContent = 'Add New Event';
     eventModal.querySelector('#eventDate').value = new Date().toISOString().split('T')[0];
+    eventModal.querySelector('#eventRecurrence').value = 'none'; // Reset recurrence
     eventModal.classList.remove('hidden');
   });
 
   const closeModalAction = () => eventModal.classList.add('hidden');
   closeModal?.addEventListener('click', closeModalAction);
   cancelEventBtn?.addEventListener('click', closeModalAction);
+
+  closeDailyEventsModal?.addEventListener('click', () => {
+    dailyEventsModal.classList.add('hidden');
+  });
 
   const iconBtns = eventModal.querySelectorAll('.icon-select');
   iconBtns.forEach(btn => {
@@ -194,6 +226,7 @@ function setupCalendarListeners(container) {
       date: eventModal.querySelector('#eventDate').value,
       time: eventModal.querySelector('#eventTime').value,
       icon: eventModal.querySelector('#eventIcon').value,
+      recurrence: eventModal.querySelector('#eventRecurrence').value, // Add recurrence
     };
 
     if (id) {
@@ -217,9 +250,26 @@ function setupCalendarListeners(container) {
     }
 
     if (calendarDay) {
-      const date = calendarDay.dataset.date;
-      // Optionally open modal to add event for this date or show events for the day
-      console.log('Clicked on date:', date);
+      const dateStr = calendarDay.dataset.date;
+      const dayEvents = appState.getEventsForDateRange(dateStr, dateStr); // Use new method
+
+      dailyEventsModalTitle.textContent = `Events for ${formatDate(dateStr)}`;
+      if (dayEvents.length > 0) {
+        dailyEventsList.innerHTML = dayEvents.map(event => `
+          <div class="p-3 bg-bg-primary rounded-lg">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl">${event.icon || '📅'}</span>
+              <div class="flex-1">
+                <p class="font-medium">${event.title}</p>
+                <p class="text-sm text-text-secondary">${event.time ? `at ${event.time}` : ''} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        dailyEventsList.innerHTML = '<p class="text-text-secondary text-center py-4">No events for this day.</p>';
+      }
+      dailyEventsModal.classList.remove('hidden');
     }
   });
 
