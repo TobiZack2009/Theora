@@ -4,7 +4,8 @@ export const StorageKeys = {
   EVENTS: 'theora_events',
   TRANSACTIONS: 'theora_transactions',
   BUDGET: 'theora_budget',
-  SETTINGS: 'theora_settings'
+  SETTINGS: 'theora_settings',
+  AI_MESSAGES: 'theora_ai_messages'
 };
 
 export function saveToLocal(key, data) {

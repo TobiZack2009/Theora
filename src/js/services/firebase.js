@@ -11,7 +11,7 @@ const hasFirebaseCredentials = () => {
 let app = null;
 let auth = null;
 let db = null;
-
+ 
 if (hasFirebaseCredentials()) {
   try {
     const firebaseConfig = {

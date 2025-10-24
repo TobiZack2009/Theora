@@ -16,6 +16,11 @@ class AppState {
       sapaMode: false,
       notifications: true
     });
+    this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
+      dailyBrief: null,
+      budgetInsight: null,
+      todoPrioritization: null,
+    });
     this.currentView = 'dashboard';
     this.listeners = new Map();
   }
@@ -121,6 +126,16 @@ class AppState {
     this.settings.sapaMode = !this.settings.sapaMode;
     saveToLocal(StorageKeys.SETTINGS, this.settings);
     this.emit('settingsChanged', this.settings);
+  }
+
+  setAIMessage(type, message) {
+    if (this.aiMessages.hasOwnProperty(type)) {
+      this.aiMessages[type] = message;
+      saveToLocal(StorageKeys.AI_MESSAGES, this.aiMessages);
+      this.emit('aiMessagesChanged', this.aiMessages);
+    } else {
+      console.warn(`Attempted to set unknown AI message type: ${type}`);
+    }
   }
 }
 

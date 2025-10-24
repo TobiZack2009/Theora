@@ -1,4 +1,5 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { appState } from '../state/appState.js';
 
 // --- Constants ---
 const BEDROCK_MODEL_ID = 'us.deepseek.r1-v1:0';
@@ -189,31 +190,46 @@ function getMockAIResponse(prompt) {
   return "I'm here to help you stay organized and reach your goals. Let me know what you need assistance with!";
 }
 
-// --- High-Level API (unchanged) ---
+// --- High-Level API ---
 
 export async function prioritizeTodos(todos) {
+  if (appState.aiMessages.todoPrioritization) {
+    return appState.aiMessages.todoPrioritization;
+  }
   const prompt = `Given these tasks: ${todos.map(t => `"${t.title}" (priority: ${t.priority}, due: ${t.dueDate || 'no date'})`).join(', ')}. 
   
   Suggest the optimal order to complete them, considering priority levels, deadlines, and typical student/young professional workflows. Return a brief recommendation.`;
   
-  return await generateAIResponse(prompt, { maxTokens: 256 });
+  const result = await generateAIResponse(prompt, { maxTokens: 256 });
+  appState.setAIMessage('todoPrioritization', result);
+  return result;
 }
 
 export async function analyzeBudget(transactions, budget) {
+  if (appState.aiMessages.budgetInsight) {
+    return appState.aiMessages.budgetInsight;
+  }
   const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
   
   const prompt = `A user has spent ₦${totalSpent} out of their ₦${budget} budget. Recent transactions: ${transactions.slice(0, 5).map(t => `₦${t.amount} on ${t.category}`).join(', ')}. 
   
   Provide brief spending insights and suggestions for a Nigerian student/young professional.`;
   
-  return await generateAIResponse(prompt, { maxTokens: 200 });
+  const result = await generateAIResponse(prompt, { maxTokens: 200 });
+  appState.setAIMessage('budgetInsight', result);
+  return result;
 }
 
 export async function generateDailyBrief(todos, budget, todayEvents) {
+  if (appState.aiMessages.dailyBrief) {
+    return appState.aiMessages.dailyBrief;
+  }
   const highPriorityCount = todos.filter(t => t.priority === 'high' && !t.completed).length;
   const eventsCount = todayEvents.length;
   
   const prompt = `Create a brief daily motivational message for a Nigerian student/young professional. They have ${highPriorityCount} urgent tasks, ${eventsCount} events today, and ₦${budget} in their weekly budget. Keep it encouraging and practical.`;
   
-  return await generateAIResponse(prompt, { maxTokens: 150 });
+  const result = await generateAIResponse(prompt, { maxTokens: 150 });
+  appState.setAIMessage('dailyBrief', result);
+  return result;
 }

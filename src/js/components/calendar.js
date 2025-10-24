@@ -1,10 +1,12 @@
 import { appState } from '../state/appState.js';
 import { generateId, formatDate, isToday } from '../utils/helpers.js';
 
-export function renderCalendar(container) {
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+let currentDisplayMonth;
+let currentDisplayYear;
+
+export function renderCalendar(container, month = new Date().getMonth(), year = new Date().getFullYear()) {
+  currentDisplayMonth = month;
+  currentDisplayYear = year;
 
   container.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -25,7 +27,7 @@ export function renderCalendar(container) {
           <!-- Calendar View -->
           <div class="lg:col-span-2 card">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-semibold">${getMonthName(currentMonth)} ${currentYear}</h2>
+              <h2 class="text-xl font-semibold" id="currentMonthYear">${getMonthName(currentDisplayMonth)} ${currentDisplayYear}</h2>
               <div class="flex space-x-2">
                 <button id="prevMonth" class="btn btn-secondary text-sm">←</button>
                 <button id="nextMonth" class="btn btn-secondary text-sm">→</button>
@@ -37,7 +39,7 @@ export function renderCalendar(container) {
               ).join('')}
             </div>
             <div id="calendarGrid" class="grid grid-cols-7 gap-2">
-              ${renderCalendarDays(currentMonth, currentYear)}
+              ${renderCalendarDays(currentDisplayMonth, currentDisplayYear)}
             </div>
           </div>
 
@@ -235,5 +237,27 @@ function setupCalendarListeners(container) {
         appState.setView('calendar');
       }
     });
+  });
+
+  // New event listeners for month navigation
+  const prevMonthBtn = container.querySelector('#prevMonth');
+  const nextMonthBtn = container.querySelector('#nextMonth');
+
+  prevMonthBtn?.addEventListener('click', () => {
+    currentDisplayMonth--;
+    if (currentDisplayMonth < 0) {
+      currentDisplayMonth = 11;
+      currentDisplayYear--;
+    }
+    renderCalendar(container, currentDisplayMonth, currentDisplayYear);
+  });
+
+  nextMonthBtn?.addEventListener('click', () => {
+    currentDisplayMonth++;
+    if (currentDisplayMonth > 11) {
+      currentDisplayMonth = 0;
+      currentDisplayYear++;
+    }
+    renderCalendar(container, currentDisplayMonth, currentDisplayYear);
   });
 }
