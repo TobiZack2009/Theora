@@ -18,6 +18,11 @@
 - **Eden AI Configuration**: Eden AI API key and model are now configured as constants directly in `rollup.config.js`.
 - **Refactored AI Service**: Renamed `src/js/services/bedrock.js` to `src/js/services/ai.js` to encapsulate both AI providers.
 
+### October 24, 2025 - AI Notification Overhaul
+- **Enhanced Context-Awareness**: AI prompts for notifications now include a comprehensive summary of the user's current state, including budget, tasks, and events.
+- **Data-Driven & Specific**: AI is instructed to directly reference user data (e.g., last transaction amount, task priority) in its responses, making notifications more personal and actionable.
+- **Randomized Topics**: The notification topic is now chosen randomly from all available data types (todos, events, budget, transactions), ensuring variety and preventing over-emphasis on a single area like finance.
+
 ### October 24, 2025 - Critical Bug Fixes
 - **Fixed Firebase offline mode crash**: Added credential check before Firebase initialization to enable true offline mode without crashes
 - **Fixed budget double-counting bug**: Refactored to use `budget.limit` as single source of truth, with remaining balance derived from transactions via `getRemainingBudget()` method
@@ -140,7 +145,7 @@ theora/
 - **Primary/Fallback**: Configured to use Amazon Bedrock as the primary AI service. If Bedrock is unavailable or fails, it automatically falls back to Eden AI.
 - **Usage**: Proactive suggestions (daily brief, todo prioritization, budget insights).
 - **Fallback**: Mock responses are used if both Bedrock and Eden AI are unavailable or fail.
-- **Context-aware**: Passes user data (todos, budget, events) for personalized suggestions.
+- **Deeply Context-Aware**: Passes a rich snapshot of user data (todos, budget, events, transactions) for personalized suggestions. For notifications, it randomly selects a topic and provides specific data points (e.g., a random todo, the last transaction) to generate highly relevant, data-driven advice.
 - **Configuration**: The primary AI provider (`AI_PROVIDER`), AWS Bedrock credentials (via environment variables), and Eden AI credentials (API key and model as constants) are configured in `rollup.config.js`.
 
 #### 4. Build System (rollup.config.js)
@@ -244,7 +249,7 @@ budget: {
 
 ### 7. Notifications
 - **Toast Notifications**: For event-driven feedback (e.g., "Task Added!").
-- **AI Tip Cards**: For proactive, contextual advice.
+- **AI Tip Cards**: For proactive, contextual advice. The AI generates randomized, data-driven notifications that comment on various aspects of the user's activity, from specific transactions to individual tasks, ensuring the advice is always fresh and relevant.
 
 ---
 
