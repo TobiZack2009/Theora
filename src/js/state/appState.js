@@ -9,7 +9,7 @@ class AppState {
     this.budget = loadFromLocal(StorageKeys.BUDGET, { 
       weekly: 50000, 
       monthly: 200000,
-      current: 50000 
+      limit: 50000
     });
     this.settings = loadFromLocal(StorageKeys.SETTINGS, {
       hustleMode: false,
@@ -18,6 +18,11 @@ class AppState {
     });
     this.currentView = 'dashboard';
     this.listeners = new Map();
+  }
+
+  getRemainingBudget() {
+    const totalSpent = this.transactions.reduce((sum, t) => sum + t.amount, 0);
+    return this.budget.limit - totalSpent;
   }
 
   subscribe(event, callback) {
@@ -95,9 +100,7 @@ class AppState {
 
   addTransaction(transaction) {
     this.transactions.push(transaction);
-    this.budget.current -= transaction.amount;
     saveToLocal(StorageKeys.TRANSACTIONS, this.transactions);
-    saveToLocal(StorageKeys.BUDGET, this.budget);
     this.emit('transactionsChanged', this.transactions);
     this.emit('budgetChanged', this.budget);
   }

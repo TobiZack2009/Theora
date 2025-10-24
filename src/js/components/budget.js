@@ -4,8 +4,8 @@ import { analyzeBudget } from '../services/bedrock.js';
 
 export function renderBudget(container) {
   const totalSpent = appState.transactions.reduce((sum, t) => sum + t.amount, 0);
-  const remaining = appState.budget.current - totalSpent;
-  const percentageUsed = ((totalSpent / appState.budget.current) * 100).toFixed(1);
+  const remaining = appState.getRemainingBudget();
+  const percentageUsed = ((totalSpent / appState.budget.limit) * 100).toFixed(1);
 
   const categoryTotals = {};
   appState.transactions.forEach(t => {
@@ -48,7 +48,7 @@ export function renderBudget(container) {
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-xs opacity-80">Budget</p>
-                      <p class="font-medium">${formatCurrency(appState.budget.current)}</p>
+                      <p class="font-medium">${formatCurrency(appState.budget.limit)}</p>
                     </div>
                     <div>
                       <p class="text-xs opacity-80">Spent</p>
@@ -124,7 +124,7 @@ export function renderBudget(container) {
             </div>
             <div class="text-center p-4 bg-blue-50 rounded-lg">
               <p class="text-xs text-gray-600 mb-1">Budget</p>
-              <p class="text-xl font-bold text-blue-600">${formatCurrency(appState.budget.current)}</p>
+              <p class="text-xl font-bold text-blue-600">${formatCurrency(appState.budget.limit)}</p>
             </div>
           </div>
         </div>
@@ -212,8 +212,8 @@ export function renderBudget(container) {
             <input type="number" id="monthlyBudget" class="input" placeholder="200000" value="${appState.budget.monthly}" required min="1">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Current Budget Period</label>
-            <input type="number" id="currentBudget" class="input" placeholder="50000" value="${appState.budget.current}" required min="1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Current Budget Limit</label>
+            <input type="number" id="currentBudget" class="input" placeholder="50000" value="${appState.budget.limit}" required min="1">
           </div>
           <button type="submit" class="btn btn-primary w-full">Save Budget</button>
         </form>
@@ -325,7 +325,7 @@ function setupBudgetListeners(container) {
     appState.setBudget({
       weekly: parseFloat(container.querySelector('#weeklyBudget').value),
       monthly: parseFloat(container.querySelector('#monthlyBudget').value),
-      current: parseFloat(container.querySelector('#currentBudget').value)
+      limit: parseFloat(container.querySelector('#currentBudget').value)
     });
     budgetModal.classList.add('hidden');
     appState.setView('budget');
@@ -369,7 +369,7 @@ function setupBudgetListeners(container) {
     getAIInsights.disabled = true;
     getAIInsights.textContent = '🤖 Analyzing...';
     
-    const insights = await analyzeBudget(appState.transactions, appState.budget.current);
+    const insights = await analyzeBudget(appState.transactions, appState.budget.limit);
     aiInsights.querySelector('p').textContent = insights;
     aiInsights.classList.remove('hidden');
     

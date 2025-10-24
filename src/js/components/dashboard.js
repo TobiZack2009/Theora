@@ -209,7 +209,7 @@ async function loadDailyBrief(container) {
   try {
     const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));
     const todayEvents = appState.events.filter(e => isToday(e.date));
-    const brief = await generateDailyBrief(todayTodos, appState.budget.current, todayEvents);
+    const brief = await generateDailyBrief(todayTodos, appState.getRemainingBudget(), todayEvents);
     briefElement.textContent = brief;
   } catch (error) {
     briefElement.textContent = 'Good morning! Ready to crush your goals today? 💪';
