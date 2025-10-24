@@ -100,3 +100,22 @@ export function getCategoryIcon(category) {
   };
   return icons[category.toLowerCase()] || '📦';
 }
+
+ /**
+ * Removes duplicates from an array of objects based on a given property.
+ * Keeps only the first occurrence of each unique property value.
+ *
+ * @param {Object[]} arr - The array of objects
+ * @param {string} key - The property to deduplicate by
+ * @returns {Object[]} A new array with duplicates removed
+ */
+export function deduplicateBy(arr, key) {
+  const seen = new Set();
+  return arr.filter(item => {
+    if (seen.has(item[key])) {
+      return false; // already seen this key value
+    }
+    seen.add(item[key]);
+    return true;
+  });
+}

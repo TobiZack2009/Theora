@@ -1,5 +1,5 @@
 import { appState } from '../state/appState.js';
-import { generateId, formatDate, isToday } from '../utils/helpers.js';
+import { generateId, formatDate, isToday, deduplicateBy } from '../utils/helpers.js';
 
 let currentDisplayMonth;
 let currentDisplayYear;
@@ -159,17 +159,20 @@ function renderUpcomingEvents() {
 
   const upcoming = appState.getEventsForDateRange(today.toISOString().split('T')[0], threeMonthsLater.toISOString().split('T')[0]);
 
+
+
   if (upcoming.length === 0) {
     return '<p class="text-text-secondary text-center py-8">No upcoming events 📅</p>';
   }
+  console.log(upcoming)
 
-  return upcoming.map(event => `
+  return (deduplicateBy(upcoming,"id")).map(event => `
     <div class="p-3 bg-bg-primary rounded-lg hover:bg-bg-secondary transition-colors">
       <div class="flex items-start space-x-3">
         <span class="text-2xl">${event.icon || '📅'}</span>
         <div class="flex-1">
           <p class="font-medium">${event.title}</p>
-          <p class="text-sm text-text-secondary">${formatDate(event.date)} ${event.time ? `at ${event.time}` : ''} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
+          <p class="text-sm text-text-secondary">${formatDate(event.date)} ${event.time ? `at ${event.time}` : ''} ${event.recurrence === 'daily' ? '( Every day )' : event.recurrence === 'weekly' ? '( Every week )' : event.recurrence === 'monthly' ? '( Every month )' : ''}</p>
         </div>
         <button class="delete-event text-error hover:opacity-70" data-event-id="${event.id}">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -261,7 +264,7 @@ function setupCalendarListeners(container) {
               <span class="text-2xl">${event.icon || '📅'}</span>
               <div class="flex-1">
                 <p class="font-medium">${event.title}</p>
-                <p class="text-sm text-text-secondary">${event.time ? `at ${event.time}` : ''} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
+                <p class="text-sm text-text-secondary">${event.time ? `at ${event.time}` : ''} ${event.recurrence === 'daily' ? '( Every day )' : event.recurrence === 'weekly' ? '( Every week )' : event.recurrence === 'monthly' ? '( Every month )' : ''}</p>
               </div>
             </div>
           </div>

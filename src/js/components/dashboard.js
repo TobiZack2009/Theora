@@ -1,5 +1,5 @@
 import { appState } from '../state/appState.js';
-import { formatCurrency, getRelativeTime, isToday } from '../utils/helpers.js';
+import { formatCurrency, getRelativeTime, isToday, deduplicateBy } from '../utils/helpers.js';
 import { generateDailyBrief } from '../services/ai.js';
 
 export function renderDashboard(container) {
@@ -108,7 +108,7 @@ export function renderDashboard(container) {
                   <span class="text-2xl">${event.icon || '📌'}</span>
                   <div class="flex-1">
                     <p class="font-medium">${event.title}</p>
-                    <p class="text-sm text-text-secondary">${event.time || 'All day'} ${event.recurrence !== 'none' ? `( ${event.recurrence} )` : ''}</p>
+                    <p class="text-sm text-text-secondary">${event.time || 'All day'} ${event.recurrence === 'daily' ? '( Every day )' : event.recurrence === 'weekly' ? '( Every week )' : event.recurrence === 'monthly' ? '( Every month )' : ''}</p>
                   </div>
                 </div>
               `).join('')
