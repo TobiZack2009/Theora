@@ -46,6 +46,57 @@
 - **Simulated finances**: Virtual card system where users manually track spending (no real bank integration)
 - **Proactive AI**: AI provides suggestions without user prompting (not reactive/chatbot style)
 - **Nigerian context**: Designed for local currency (₦) and cultural context (terms like "sapa mode", "hustle mode")
+- **Modern & Clean UI**: A minimalist interface with a card-based layout, responsive design, and a dual-theme (light/dark) system.
+- **Interactive & Conversational**: The app provides proactive feedback through non-blocking notifications and AI-powered tips.
+
+---
+
+## Design System
+
+### 1. Core Color Palette
+The color system is built on a primary brand palette, semantic colors for user feedback, and a complete dual-theme (light/dark) system using CSS variables.
+
+**Brand & Semantic Colors**
+- **Primary Blue (`--primary-blue`):** `#00bcd4` - Main brand color for buttons, links, and highlights.
+- **Gradient Start (`--gradient-start`):** `#00e0ff` - Neon cyan for gradients.
+- **Gradient End (`--gradient-end`):** `#00bfa6` - Deep teal for gradients.
+- **Success (`--success`):** `#4caf50` - Green for positive feedback.
+- **Warning (`--warning`):** `#ffc107` - Yellow for cautions.
+- **Error (`--error`):** `#f44336` - Red for alerts.
+
+**Dual-Theme System (Light & Dark)**
+- **Default Mode:** Dark Mode.
+- **Theme Attribute:** `data-theme` on `<html>` tag.
+- **Main Background (`--bg-primary`):** `#f0f7fa` (Light) / `#00111E` (Dark).
+- **Card Background (`--bg-secondary`):** `#ffffff` (Light) / `#021B34` (Dark).
+- **Primary Text (`--text-primary`):** `#00111E` (Light) / `#f5faff` (Dark).
+- **Secondary Text (`--text-secondary`):** `#5A6B7B` (Light) / `rgba(245, 250, 255, 0.7)` (Dark).
+- **Borders (`--border-color`):** `#dbe9f0` (Light) / `rgba(0, 188, 212, 0.2)` (Dark).
+
+### 2. Typography
+- **Font Family:** Inter (from Google Fonts).
+- **Hierarchy:**
+    - **Brand Title (h1):** 28px, 700 weight.
+    - **Page Title (h2):** 28px, 700 weight.
+    - **Section Title (h5):** 20px, 700 weight.
+    - **Card/Item Title (h6):** 14px, 600 weight.
+    - **Body Text:** 1rem, 400 weight.
+    - **Form Labels:** 600 weight.
+
+### 3. Layout & Component System
+- **Layout:** Fully responsive, single-page application (SPA) with a centered container (`max-width: 1200px`).
+- **Core Component: Cards:**
+    - **Style:** Rounded corners (15-20px), themed backgrounds (`--bg-secondary`), and borders (`--border-color`).
+    - **Interactivity:** Hover effects (lift and border highlight).
+- **Buttons & Forms:**
+    - **Buttons:** Rounded (10px), with primary actions using a gradient background and secondary actions using outline styles.
+    - **Forms:** Themed, rounded inputs with clear focus states for accessibility.
+
+### 4. Interactivity & User Feedback
+- **Proactive Notifications:**
+    - **`.notification-toast`:** Slides in from the right for event-driven feedback (e.g., "Task Added!").
+    - **`.ai-tip-card`:** Slides in from the top for proactive, contextual AI advice.
+- **Theme Toggling:** A sun/moon icon in the navbar allows instant switching between Light and Dark modes, with the preference saved to `localStorage`.
 
 ---
 
@@ -189,6 +240,11 @@ budget: {
 - Hustle Mode: Focus mode with motivational messaging
 - Sapa Mode: Budget-conscious suggestions when funds are low
 - Notification preferences
+- **Light & Dark Mode Toggle**: Switch between themes.
+
+### 7. Notifications
+- **Toast Notifications**: For event-driven feedback (e.g., "Task Added!").
+- **AI Tip Cards**: For proactive, contextual advice.
 
 ---
 

@@ -1,6 +1,7 @@
 import { renderApp } from '../components/app.js';
 import { appState } from '../state/appState.js';
 import { initAIClients } from '../services/ai.js';
+import { initTheme } from './theme.js';
 
 export function initializeApp() {
   const appContainer = document.getElementById('app');
@@ -9,6 +10,9 @@ export function initializeApp() {
     console.error('App container not found');
     return;
   }
+
+  // Initialize theme
+  initTheme();
 
   // Initialize AI clients
   initAIClients();

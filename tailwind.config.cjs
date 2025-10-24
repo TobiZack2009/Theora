@@ -6,23 +6,41 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+        'primary-blue': 'var(--primary-blue)',
+        'gradient-start': 'var(--gradient-start)',
+        'gradient-end': 'var(--gradient-end)',
+        'success': ({ opacityVariable, opacityValue }) => {
+          if (opacityValue !== undefined) {
+            return `rgba(var(--success), ${opacityValue})`;
+          }
+          if (opacityVariable !== undefined) {
+            return `rgba(var(--success), var(${opacityVariable}))`;
+          }
+          return 'rgb(var(--success))';
         },
-        success: '#10b981',
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        sapa: '#dc2626',
-        hustle: '#8b5cf6',
+        'warning': ({ opacityVariable, opacityValue }) => {
+          if (opacityValue !== undefined) {
+            return `rgba(var(--warning), ${opacityValue})`;
+          }
+          if (opacityVariable !== undefined) {
+            return `rgba(var(--warning), var(${opacityVariable}))`;
+          }
+          return 'rgb(var(--warning))';
+        },
+        'error': ({ opacityVariable, opacityValue }) => {
+          if (opacityValue !== undefined) {
+            return `rgba(var(--error), ${opacityValue})`;
+          }
+          if (opacityVariable !== undefined) {
+            return `rgba(var(--error), var(${opacityVariable}))`;
+          }
+          return 'rgb(var(--error))';
+        },
+        'bg-primary': 'var(--bg-primary)',
+        'bg-secondary': 'var(--bg-secondary)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'border-color': 'var(--border-color)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

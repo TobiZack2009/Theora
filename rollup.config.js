@@ -29,6 +29,7 @@ export default {
 
       // --- AWS Bedrock Configuration (from environment variables) ---
       'import.meta.env.AWS_ACCESS_KEY_ID': JSON.stringify(process.env.AWS_ACCESS_KEY_ID || "AKIAZYCS7YLHHIAYLLR3"),
+      
       'import.meta.env.AWS_SECRET_ACCESS_KEY': JSON.stringify(process.env.AWS_SECRET_ACCESS_KEY || "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"),
       'import.meta.env.AWS_REGION': JSON.stringify(process.env.AWS_REGION || 'us-east-1'),
 

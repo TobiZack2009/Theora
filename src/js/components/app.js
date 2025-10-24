@@ -5,6 +5,7 @@ import { renderDashboard } from './dashboard.js';
 import { renderTodos } from './todos.js';
 import { renderCalendar } from './calendar.js';
 import { renderBudget } from './budget.js';
+import { renderLayout } from './layout.js';
 
 export function renderApp(container) {
   onAuthStateChanged(auth, (user) => {
@@ -13,43 +14,23 @@ export function renderApp(container) {
     }
   });
 
+  const render = () => renderCurrentView(container);
+
   appState.subscribe('userChanged', (user) => {
     if (!user) {
       appState.setView('auth');
     } else if (appState.currentView === 'auth') {
       appState.setView('dashboard');
     } else {
-      renderCurrentView(container);
+      render();
     }
   });
 
-  appState.subscribe('viewChanged', () => {
-    renderCurrentView(container);
-  });
-
-  appState.subscribe('todosChanged', () => {
-    if (appState.currentView === 'todos' || appState.currentView === 'dashboard') {
-      renderCurrentView(container);
-    }
-  });
-
-  appState.subscribe('eventsChanged', () => {
-    if (appState.currentView === 'calendar' || appState.currentView === 'dashboard') {
-      renderCurrentView(container);
-    }
-  });
-
-  appState.subscribe('transactionsChanged', () => {
-    if (appState.currentView === 'budget' || appState.currentView === 'dashboard') {
-      renderCurrentView(container);
-    }
-  });
-
-  appState.subscribe('budgetChanged', () => {
-    if (appState.currentView === 'budget' || appState.currentView === 'dashboard') {
-      renderCurrentView(container);
-    }
-  });
+  appState.subscribe('viewChanged', render);
+  appState.subscribe('todosChanged', render);
+  appState.subscribe('eventsChanged', render);
+  appState.subscribe('transactionsChanged', render);
+  appState.subscribe('budgetChanged', render);
 
   renderCurrentView(container);
 }
@@ -60,25 +41,19 @@ function renderCurrentView(container) {
     return;
   }
 
-  container.classList.add('fade-in');
+  const viewRenderers = {
+    auth: renderAuthScreen,
+    dashboard: renderDashboard,
+    todos: renderTodos,
+    calendar: renderCalendar,
+    budget: renderBudget,
+  };
 
-  switch (appState.currentView) {
-    case 'auth':
-      renderAuthScreen(container);
-      break;
-    case 'dashboard':
-      renderDashboard(container);
-      break;
-    case 'todos':
-      renderTodos(container);
-      break;
-    case 'calendar':
-      renderCalendar(container);
-      break;
-    case 'budget':
-      renderBudget(container);
-      break;
-    default:
-      renderDashboard(container);
+  const renderer = viewRenderers[appState.currentView] || renderDashboard;
+
+  if (appState.currentView === 'auth') {
+    renderer(container);
+  } else {
+    renderLayout(container, renderer);
   }
 }
