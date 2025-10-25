@@ -42,6 +42,7 @@ export function renderBudget(container) {
                     <p class="text-xs opacity-80">Budget</p>
                     <p class="font-medium">${formatCurrency(appState.budget.limit)}</p>
                   </div>
+                  
                   <div>
                     <p class="text-xs opacity-80">Spent</p>
                     <p class="font-medium">${formatCurrency(totalSpent)}</p>
@@ -108,11 +109,12 @@ export function renderBudget(container) {
           <div class="text-center p-4 bg-success/10 rounded-lg">
             <p class="text-xs text-text-secondary mb-1">Remaining</p>
             <p class="text-xl font-bold text-success">${formatCurrency(remaining)}</p>
-          </div>
+          </div><br class="lg:hidden block">
           <div class="text-center p-4 bg-error/10 rounded-lg">
             <p class="text-xs text-text-secondary mb-1">Spent</p>
             <p class="text-xl font-bold text-error">${formatCurrency(totalSpent)}</p>
           </div>
+          
           <div class="text-center p-4 bg-primary-blue/10 rounded-lg">
             <p class="text-xs text-text-secondary mb-1">Budget</p>
             <p class="text-xl font-bold text-primary-blue">${formatCurrency(appState.budget.limit)}</p>
