@@ -24,7 +24,7 @@ export function renderLayout(container, viewRenderer) {
       <header class="bg-bg-secondary/80 backdrop-blur-sm border-b border-border-color sticky top-0 z-20">
         <div class="container mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-            <img src="src/logo.png" alt="Theora Logo" class="h-8 w-8">
+            <img src="assets/logo.png" alt="Theora Logo" class="h-8 w-8">
             <h1 class="text-2xl font-bold text-gradient">Theora</h1>
           </div>
           

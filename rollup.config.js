@@ -63,6 +63,7 @@ export default {
       targets: [
         { src: 'src/index.html', dest: 'site' },
         { src: 'src/sw.js', dest: 'site' },
+        { src: 'src/logo.png', dest: 'site/assets' },
         { src: 'public/assets/*', dest: 'site/assets' }
       ],
       hook: 'writeBundle'
@@ -70,7 +71,7 @@ export default {
 
     !production && serve({
       open: false,
-      contentBase: 'site',
+      contentBase: '',
       host: '0.0.0.0',
       port: 5005,
       headers: {

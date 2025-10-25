@@ -1,6 +1,7 @@
 import { appState } from '../state/appState.js';
 import { generateId, getRelativeTime, isToday } from '../utils/helpers.js';
 import { generateTimeManagementAdvice } from '../services/ai.js';
+import { marked } from 'marked';
 
 export function renderTodos(container) {
   let filteredTodos = appState.todos.filter(t => !t.completed);
@@ -151,7 +152,7 @@ async function loadTimeManagementAdvice(container) {
   try {
     const advice = await generateTimeManagementAdvice(appState.todos, appState.events);
     appState.setAIMessage('timeManagementAdvice', advice);
-    adviceElement.innerHTML = advice;
+    adviceElement.innerHTML =marked.parse( advice);
   } catch (error) {
     console.error('AI Time Management Advice Error:', error);
     adviceElement.innerHTML = 'Could not generate time management advice.';
