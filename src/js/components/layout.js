@@ -81,7 +81,7 @@ export function renderLayout(container, viewRenderer) {
       </div>
 
       <!-- Notification Popups Container -->
-      <div id="notification-popups" class="fixed bottom-4 right-4 space-y-3 z-50"></div>
+      <div id="notification-popups" class="fixed top-40 right-4 space-y-3 z-50"></div>
     </div>
   `;
 
