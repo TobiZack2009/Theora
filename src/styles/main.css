@@ -34,6 +34,10 @@
     --gradient-card: linear-gradient(145deg, rgba(0, 224, 255, 0.05), rgba(0, 191, 166, 0.03));
   }
 
+  body, html {
+    width: 100vw;
+    height: 100vh;
+  }
   [data-theme="dark"] {
     --bg-primary-rgb: 0, 17, 30;
     --bg-primary: #00111E;

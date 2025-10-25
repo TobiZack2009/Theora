@@ -7,6 +7,19 @@
     <title>Theora – Your Life’s Gentle Co-Pilot</title>
     <style>
       /* ===== Global Styles ===== */
+      html {
+        --primary-blue: #00bcd4;
+        --gradient-start: #00e0ff;
+        --gradient-end: #00bfa6;
+        --success: #4caf50;
+        --warning: #ffc107;
+        --error: #f44336;
+        --bg-primary: #f0f7fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #00111E;
+        --text-secondary: #5A6B7B;
+        --border-color: #dbe9f0;
+      }
 * {
   margin: 0;
   padding: 0;
@@ -19,8 +32,8 @@ html,body{
 
 body {
   font-family: 'Nunito', sans-serif;
-  background-color: #f5f7fa;
-  color: #0e1d34;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -32,12 +45,13 @@ body {
 
 /* ===== Navbar ===== */
 .navbar {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 1rem 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .nav-content {
@@ -49,7 +63,7 @@ body {
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0e1d34;
+  color: var(--text-primary);
 }
 .logo img {
   height: 65px;
@@ -60,7 +74,7 @@ body {
 
 
 .logo span {
-  color: #ffc145;
+  color: var(--primary-blue);
 }
 
 .nav-links {
@@ -71,13 +85,13 @@ body {
 
 .nav-links a {
   text-decoration: none;
-  color: #0e1d34;
+  color: var(--text-primary);
   font-weight: 600;
   transition: color 0.3s;
 }
 
 .nav-links a:hover {
-  color: #21bf73;
+  color: var(--primary-blue);
 }
 
 /* ===== Buttons ===== */
@@ -91,28 +105,29 @@ body {
 }
 
 .btn-primary {
-  background-color: #21bf73;
+  background-color: var(--primary-blue);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background-color: #1aa762;
+  opacity: 0.9;
 }
 
 .btn-outline {
-  border: 2px solid #21bf73;
-  color: #21bf73;
+  border: 2px solid var(--primary-blue);
+  color: var(--primary-blue);
 }
 
 .btn-outline:hover {
-  background-color: #21bf73;
+  background-color: var(--primary-blue);
   color: #fff;
 }
 
 /* ===== Hero Section ===== */
 .hero {
   padding: 4rem 0;
-  background: linear-gradient(120deg, #f5f7fa 60%, #eaf8f0);
+  background: linear-gradient(120deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  color: #fff;
 }
 
 .hero-content {
@@ -128,12 +143,13 @@ body {
 }
 
 .hero-text h1 span {
-  color: #21bf73;
+  color: #fff;
 }
 
 .hero-text p {
   margin: 1rem 0 2rem;
-  color: #333;
+  color: #fff;
+  opacity: 0.9;
 }
 
 .hero-image img {
@@ -161,11 +177,12 @@ body {
 }
 
 .feature-card {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 img{
     width: fit-content;
@@ -185,9 +202,9 @@ img{
 .cta {
   text-align: center;
   padding: 4rem 0;
-  background-color: #0e1d34;
-  color: #fff;
-  border-top: 4px solid #21bf73;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-top: 4px solid var(--primary-blue);
 }
 
 .cta h2 {
@@ -203,10 +220,10 @@ img{
 .footer {
   text-align: center;
   padding: 1.5rem;
-  background-color: #fff;
-  border-top: 1px solid #e0e0e0;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
 }  
 
 @media (max-width: 768px) {
