@@ -1,9 +1,13 @@
 import { appState } from '../state/appState.js';
-import { generateId, getRelativeTime, isToday } from '../utils/helpers.js';
+import { generateId, getRelativeTime, isToday, getCountdown } from '../utils/helpers.js';
 import { generateTimeManagementAdvice } from '../services/ai.js';
 import { marked } from 'marked';
 
+
+
 export function renderTodos(container) {
+  
+
   let filteredTodos = appState.todos.filter(t => !t.completed);
   const completedTodos = appState.todos.filter(t => t.completed);
 
@@ -37,6 +41,17 @@ export function renderTodos(container) {
 
   const incompleteTodos = filteredTodos;
 
+  // Sort by due date and then priority
+  const priorityMap = { high: 1, medium: 2, low: 3 };
+  incompleteTodos.sort((a, b) => {
+    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+    if (dateA !== dateB) {
+        return dateA - dateB;
+    }
+    return (priorityMap[a.priority] || 4) - (priorityMap[b.priority] || 4);
+  });
+
   container.innerHTML = `
     <div class="fade-in">
       <div class="flex items-center justify-between mb-6">
@@ -44,15 +59,11 @@ export function renderTodos(container) {
         <button id="addTodoBtn" class="btn btn-primary">+ Add Todo</button>
       </div>
 
-      
-
-      <!-- AI Time Management Advice -->
       <div id="aiTimeManagementAdvice" class="card mb-6">
         <h3 class="text-xl font-semibold mb-4">Our Advice</h3>
         <p id="aiAdviceContent" class="text-text-secondary">Loading personalized advice...</p>
       </div>
 
-      <!-- Filters -->
       <div class="flex flex-wrap gap-2 mb-4">
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="today">Today</button>
@@ -61,7 +72,6 @@ export function renderTodos(container) {
         <button class="filter-btn" data-filter="high">High Priority</button>
       </div>
 
-      <!-- Incomplete Todos -->
       <div class="card mb-6">
         <h3 class="text-xl font-semibold mb-4">To Do (${incompleteTodos.length})</h3>
         <div id="todosList" class="space-y-3">
@@ -72,7 +82,6 @@ export function renderTodos(container) {
         </div>
       </div>
 
-      <!-- Completed Todos -->
       ${completedTodos.length > 0 ? `
         <div class="card">
           <h3 class="text-xl font-semibold mb-4 text-text-secondary">Completed (${completedTodos.length})</h3>
@@ -83,7 +92,6 @@ export function renderTodos(container) {
       ` : ''}
     </div>
 
-    <!-- Add/Edit Todo Modal -->
     <div id="todoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
       <div class="card max-w-md w-full">
         <div class="flex items-center justify-between mb-6">
@@ -123,9 +131,15 @@ export function renderTodos(container) {
               </select>
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Due Date</label>
-            <input type="date" id="todoDueDate" class="input">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Due Date</label>
+              <input type="date" id="todoDueDate" class="input" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Due Time</label>
+              <input type="time" id="todoTime" class="input" required>
+            </div>
           </div>
           <div class="flex space-x-3">
             <button type="submit" class="btn btn-primary flex-1">Save Todo</button>
@@ -169,7 +183,12 @@ function renderTodoItem(todo) {
         <div class="flex items-center space-x-4 mt-2">
           <span class="badge badge-${todo.priority}">${todo.priority.toUpperCase()}</span>
           ${todo.category ? `<span class="text-xs text-text-secondary">📁 ${todo.category}</span>` : ''}
-          ${todo.dueDate ? `<span class="text-xs text-text-secondary">📅 ${getRelativeTime(todo.dueDate)}</span>` : ''}
+          ${todo.dueDate 
+            ? `<span class="text-xs font-semibold text-error countdown-timer" data-due-date="${todo.dueDate}">
+                 ⏰ ${getCountdown(todo.dueDate)}
+               </span>` 
+            : ''
+          }
         </div>
       </div>
       <div class="flex space-x-2">
@@ -186,7 +205,7 @@ function renderTodoItem(todo) {
 
 function setupTodosListeners(container) {
   const addTodoBtn = container.querySelector('#addTodoBtn');
-  const todoModal = document.getElementById('todoModal'); // Modal is outside container now
+  const todoModal = document.getElementById('todoModal');
   const closeModal = todoModal.querySelector('#closeModal');
   const cancelBtn = todoModal.querySelector('#cancelBtn');
   const todoForm = todoModal.querySelector('#todoForm');
@@ -205,12 +224,15 @@ function setupTodosListeners(container) {
   todoForm?.addEventListener('submit', (e) => {
     e.preventDefault();
     const id = todoModal.querySelector('#todoId').value;
+    const dueDate = todoModal.querySelector('#todoDueDate').value;
+    const dueTime = todoModal.querySelector('#todoTime').value;
+
     const todoData = {
       title: todoModal.querySelector('#todoTitle').value,
       description: todoModal.querySelector('#todoDescription').value,
       priority: todoModal.querySelector('#todoPriority').value,
       category: todoModal.querySelector('#todoCategory').value,
-      dueDate: todoModal.querySelector('#todoDueDate').value,
+      dueDate: `${dueDate}T${dueTime}`,
     };
 
     if (id) {
@@ -239,7 +261,16 @@ function setupTodosListeners(container) {
         todoModal.querySelector('#todoDescription').value = todo.description || '';
         todoModal.querySelector('#todoPriority').value = todo.priority;
         todoModal.querySelector('#todoCategory').value = todo.category || 'other';
-        todoModal.querySelector('#todoDueDate').value = todo.dueDate ? new Date(todo.dueDate).toISOString().substring(0, 10) : '';
+        if (todo.dueDate) {
+          const date = new Date(todo.dueDate);
+          todoModal.querySelector('#todoDueDate').value = date.toISOString().split('T')[0];
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          todoModal.querySelector('#todoTime').value = `${hours}:${minutes}`;
+        } else {
+          todoModal.querySelector('#todoDueDate').value = '';
+          todoModal.querySelector('#todoTime').value = '';
+        }
         todoModal.querySelector('#modalTitle').textContent = 'Edit Todo';
         todoModal.classList.remove('hidden');
       }
@@ -257,11 +288,10 @@ function setupTodosListeners(container) {
     button.addEventListener('click', (e) => {
       const filter = e.target.dataset.filter;
       appState.todoFilter = filter;
-      appState.emit('todosChanged', appState.todos); // Re-render todos with new filter
+      appState.emit('todosChanged', appState.todos);
     });
   });
 
-  // Highlight active filter button
   filterButtons.forEach(button => {
     if (button.dataset.filter === appState.todoFilter) {
       button.classList.add('active', 'btn-primary');
@@ -271,4 +301,6 @@ function setupTodosListeners(container) {
       button.classList.add('btn-secondary');
     }
   });
+
+  
 }

@@ -1,18 +1,42 @@
 import { appState } from '../state/appState.js';
-import { formatCurrency, getRelativeTime, isToday, deduplicateBy } from '../utils/helpers.js';
+import { formatCurrency, getRelativeTime, isToday, deduplicateBy, getCountdown } from '../utils/helpers.js';
 import { generateDailyBrief } from '../services/ai.js';
 
 export function renderDashboard(container) {
   const todayTodos = appState.todos.filter(t => !t.completed && isToday(t.dueDate));
-  const highPriorityTodos = appState.todos.filter(t => !t.completed && t.priority === 'high');
+  
+  // New logic for urgent tasks
+  const now = new Date();
+  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const urgentTasks = appState.todos.filter(t => {
+    if (t.completed) return false;
+    const isHighPriority = t.priority === 'high';
+    let isDueSoon = false;
+    if (t.dueDate) {
+      const dueDate = new Date(t.dueDate);
+      isDueSoon = dueDate > now && dueDate <= twentyFourHoursFromNow;
+    }
+    return isHighPriority || isDueSoon;
+  });
+
+  // Sort urgent tasks
+  const priorityMap = { high: 1, medium: 2, low: 3 };
+  urgentTasks.sort((a, b) => {
+      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      if (dateA !== dateB) {
+          return dateA - dateB;
+      }
+      return (priorityMap[a.priority] || 4) - (priorityMap[b.priority] || 4);
+  });
+
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const todayEvents = appState.getEventsForDateRange(todayStr, todayStr);
   const weekSpending = appState.transactions
     .filter(t => {
       const date = new Date(t.date);
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
       return date >= weekAgo;
     })
     .reduce((sum, t) => sum + t.amount, 0);
@@ -37,8 +61,8 @@ export function renderDashboard(container) {
             <h3 class="text-sm font-medium text-text-secondary">Urgent Tasks</h3>
             <span class="text-2xl">🔥</span>
           </div>
-          <p class="text-3xl font-bold text-error">${highPriorityTodos.length}</p>
-          <p class="text-xs text-text-secondary mt-1">High priority</p>
+          <p class="text-3xl font-bold text-error">${urgentTasks.length}</p>
+          <p class="text-xs text-text-secondary mt-1">Due soon or high priority</p>
         </div>
 
         <div class="card stat-card bg-primary-blue/10 border-border-color">
@@ -78,16 +102,21 @@ export function renderDashboard(container) {
             <button id="viewAllTodos" class="text-primary-blue hover:underline text-sm">View All</button>
           </div>
           <div id="priorityTodosList" class="space-y-3">
-            ${highPriorityTodos.length === 0 
+            ${urgentTasks.length === 0 
               ? '<p class="text-text-secondary text-center py-8">No urgent tasks! You\'re doing great 🎉</p>'
-              : highPriorityTodos.slice(0, 3).map(todo => `
+              : urgentTasks.slice(0, 3).map(todo => `
                 <div class="flex items-start space-x-3 p-3 bg-bg-primary rounded-lg">
                   <input type="checkbox" class="mt-1 rounded" data-todo-id="${todo.id}">
                   <div class="flex-1">
                     <p class="font-medium">${todo.title}</p>
-                    <p class="text-sm text-text-secondary">${getRelativeTime(todo.dueDate)}</p>
+                    ${todo.dueDate
+                      ? `<p class="text-sm font-semibold text-error countdown-timer" data-due-date="${todo.dueDate}">
+                           ⏰ ${getCountdown(todo.dueDate)}
+                         </p>`
+                      : `<p class="text-sm text-text-secondary">${getRelativeTime(todo.dueDate)}</p>`
+                    }
                   </div>
-                  <span class="badge badge-high">HIGH</span>
+                  <span class="badge badge-${todo.priority}">${todo.priority.toUpperCase()}</span>
                 </div>
               `).join('')
             }

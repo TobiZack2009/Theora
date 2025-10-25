@@ -119,3 +119,29 @@ export function deduplicateBy(arr, key) {
     return true;
   });
 }
+
+export function getCountdown(date) {
+  if (!date) return '';
+  const now = new Date();
+  const target = new Date(date);
+  let diffMs = target - now;
+
+  if (diffMs <= 0) return 'Overdue';
+
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  diffMs -= diffDays * 1000 * 60 * 60 * 24;
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  diffMs -= diffHours * 1000 * 60 * 60;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  diffMs -= diffMins * 1000 * 60;
+  const diffSecs = Math.floor(diffMs / 1000);
+
+  let output = '';
+  if (diffDays > 0) {
+    output += `${diffDays}d `;
+  }
+  
+  output += `${String(diffHours).padStart(2, '0')}:${String(diffMins).padStart(2, '0')}:${String(diffSecs).padStart(2, '0')}`;
+  
+  return output;
+}

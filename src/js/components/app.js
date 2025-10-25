@@ -8,6 +8,7 @@ import { renderBudget } from './budget.js';
 import { renderAIChat } from './aiChat.js';
 import { Settings } from './settings.js';
 import { renderLayout } from './layout.js';
+import { getCountdown } from '../utils/helpers.js';
 
 {
 //A hack to make sure that the user's name displays
@@ -48,6 +49,15 @@ export function renderApp(container) {
   appState.subscribe('budgetChanged', render);
 
   renderCurrentView(container);
+
+  setInterval(() => {
+    document.querySelectorAll('.countdown-timer').forEach(el => {
+        const dueDate = el.dataset.dueDate;
+        if (dueDate) {
+            el.innerHTML = `⏰ ${getCountdown(dueDate)}`;
+        }
+    });
+  }, 1000);
 }
 
 function renderCurrentView(container) {
