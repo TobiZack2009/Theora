@@ -1,22 +1,21 @@
+
 import { db } from '../services/firebase.js';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export const StorageKeys = {
   USER: 'theora_user',
-  USER_PROFILE: 'theora_user_profile', // This might be redundant with 'userinfo'
   TODOS: 'theora_todos',
   EVENTS: 'theora_events',
   TRANSACTIONS: 'theora_transactions',
   BUDGET: 'theora_budget',
   SETTINGS: 'theora_settings',
-  AI_MESSAGES: 'aiMessages',
-  CHAT_SESSIONS: 'chatSessions',
-  LAST_CHAT_SESSION_ID: 'lastChatSessionId',
-  AI_PROVIDER: 'aiProvider',
-  AI_RESPONSE_STYLE: 'aiResponseStyle',
-  CUSTOM_AI_MODES: 'customAiModes',
-  USER_INFO: 'theora_user_info', // New key for user info in localStorage
-  USER_NAME:'theora_user_name',
+  AI_MESSAGES: 'theora_aiMessages',
+  CHAT_SESSIONS: 'theora_chatSessions',
+  LAST_CHAT_SESSION_ID: 'theora_lastChatSessionId',
+  AI_PROVIDER: 'theora_aiProvider',
+  AI_RESPONSE_STYLE: 'theora_aiResponseStyle',
+  CUSTOM_AI_MODES: 'theora_customAiModes',
+  USER_INFO: 'theora_user_info',
 };
 
 export function saveToLocal(key, data) {
@@ -61,67 +60,114 @@ export function clearAllLocal() {
   }
 }
 
-// New storage object for Firestore interaction, especially for userinfo
+const storageKeyMap = {
+    'todos': StorageKeys.TODOS,
+    'events': StorageKeys.EVENTS,
+    'transactions': StorageKeys.TRANSACTIONS,
+    'budget': StorageKeys.BUDGET,
+    'settings': StorageKeys.SETTINGS,
+    'aiMessages': StorageKeys.AI_MESSAGES,
+    'chatSessions': StorageKeys.CHAT_SESSIONS,
+    'currentChatSessionId': StorageKeys.LAST_CHAT_SESSION_ID,
+    'aiProvider': StorageKeys.AI_PROVIDER,
+    'aiResponseStyle': StorageKeys.AI_RESPONSE_STYLE,
+    'customAiModes': StorageKeys.CUSTOM_AI_MODES,
+};
+
 export const storage = {
-  async get(collectionName, docId) {
-    // First, try to load from localStorage for offline access
-    const localData = loadFromLocal(`${collectionName}_${docId}`);
-    if (localData) {
-      return localData;
+  async loadUserData(uid) {
+    if (!uid) return {};
+
+    const keysToSync = Object.keys(storageKeyMap);
+
+    let remoteUserDoc = {};
+    if (db) {
+      try {
+        const remoteDocRef = doc(db, 'userdata', uid);
+        const remoteDocSnap = await getDoc(remoteDocRef);
+        if (remoteDocSnap.exists()) {
+          remoteUserDoc = remoteDocSnap.data();
+        }
+      } catch (error) {
+        console.error('Firestore fetch failed, will rely on local data.', error);
+      }
     }
 
-    // If not in localStorage, try to fetch from Firestore
+    const finalData = {};
+    for (const key of keysToSync) {
+      const storageKey = storageKeyMap[key];
+      const localItem = loadFromLocal(storageKey);
+      const remoteItem = remoteUserDoc[key];
+
+      if (remoteItem && (!localItem || new Date(remoteItem.lastUpdated) > new Date(localItem.lastUpdated))) {
+        finalData[key] = remoteItem.data;
+        saveToLocal(storageKey, remoteItem);
+      } else if (localItem) {
+        finalData[key] = localItem.data;
+      } else {
+        finalData[key] = undefined;
+      }
+    }
+    return finalData;
+  },
+
+  async saveUserData(uid, firestoreKey, data) {
+    if (!uid || !firestoreKey) return;
+    
+    const storageKey = storageKeyMap[firestoreKey];
+    if (!storageKey) {
+        console.error(`No storage key found for firestore key: ${firestoreKey}`);
+        return;
+    }
+
+    const payload = {
+      lastUpdated: new Date().toISOString(),
+      data: data,
+    };
+
+    saveToLocal(storageKey, payload);
+
+    if (db) {
+      try {
+        const remoteDocRef = doc(db, 'userdata', uid);
+        await setDoc(remoteDocRef, { [firestoreKey]: payload }, { merge: true });
+      } catch (error) {
+        console.error(`Error saving ${firestoreKey} to Firestore:`, error);
+      }
+    }
+  },
+  
+  async get(collectionName, docId) {
+    const localData = loadFromLocal(`${collectionName}_${docId}`);
+    if (localData) return localData;
     if (db) {
       try {
         const docRef = doc(db, collectionName, docId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          saveToLocal(`${collectionName}_${docId}`, data); // Save to localStorage for future offline access
+          saveToLocal(`${collectionName}_${docId}`, data);
           return data;
-        } else {
-          console.log(`No such document for ${collectionName}/${docId} in Firestore!`);
-          return null;
         }
       } catch (error) {
         console.error(`Error getting document ${collectionName}/${docId} from Firestore:`, error);
-        return null;
       }
     }
-    return null; // No local data, no Firestore, return null
+    return null;
   },
 
   async set(collectionName, docId, data) {
-    // Always save to localStorage first
     saveToLocal(`${collectionName}_${docId}`, data);
-
-    // Then, try to save to Firestore if online
     if (db) {
       try {
         const docRef = doc(db, collectionName, docId);
-        await setDoc(docRef, data, { merge: true }); // Use merge to avoid overwriting other fields
+        await setDoc(docRef, data, { merge: true });
         return true;
       } catch (error) {
         console.error(`Error setting document ${collectionName}/${docId} in Firestore:`, error);
         return false;
       }
     }
-    return false; // Not saved to Firestore
+    return false;
   },
-
-  // Add a delete method for completeness if needed
-  // async delete(collectionName, docId) {
-  //   removeFromLocal(`${collectionName}_${docId}`);
-  //   if (db) {
-  //     try {
-  //       const docRef = doc(db, collectionName, docId);
-  //       await deleteDoc(docRef);
-  //       return true;
-  //     } catch (error) {
-  //       console.error(`Error deleting document ${collectionName}/${docId} from Firestore:`, error);
-  //       return false;
-  //     }
-  //   }
-  //   return false;
-  // }
 };

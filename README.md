@@ -6,6 +6,10 @@ This is a platform that empowers young people to manage their time and money wis
 
  The app uses Tailwind.CSS for styling and Rollup for module bundling.
 
+## Backend
+We primarily used Firebase as backend for database and authentication.
+ We also used Amazon Bedrock as an AI provider.
+
 ## Running the app
 Run `npm i` to install dependencies.
 Run `npm run dev` to start an autoreloading development server.

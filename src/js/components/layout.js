@@ -1,11 +1,12 @@
 import { appState } from '../state/appState.js';
 import { initTheme, toggleTheme } from '../utils/theme.js';
 import { stopNotificationService } from '../services/notificationService.js'; // Import stopNotificationService
+import { clearAllLocal } from '../utils/storage.js';
 
 function renderNavItems() {
   const views = ['dashboard', 'todos', 'calendar', 'budget', 'aiChat', 'settings'];
   return views.map(view => `
-    <button
+    <button 
       data-view="${view}"
       class="nav-item block w-full text-left py-2 px-4 font-medium capitalize transition-colors duration-200
       ${appState.currentView === view
@@ -118,6 +119,7 @@ export function renderLayout(container, viewRenderer) {
 
   // Setup listeners
   const logout = () => {
+    clearAllLocal();
     appState.setUser(null);
     appState.setView('auth');
     stopNotificationService(); // Stop notification service on logout

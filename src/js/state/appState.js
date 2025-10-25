@@ -1,40 +1,54 @@
-import { loadFromLocal, saveToLocal, StorageKeys, removeFromLocal, storage } from '../utils/storage.js';
+import { storage, StorageKeys, loadFromLocal, saveToLocal } from '../utils/storage.js';
 import { marked } from 'marked';
-import { generateId } from '../utils/helpers.js'; // Import generateId
+import { generateId } from '../utils/helpers.js';
 
 class AppState {
   constructor() {
-    this.user = loadFromLocal(StorageKeys.USER, null); // Load user from local storage
+    this.user = loadFromLocal(StorageKeys.USER, null);
     console.log('AppState constructor: Initial user:', this.user);
-    this.todos = loadFromLocal(StorageKeys.TODOS, []);
-    this.events = loadFromLocal(StorageKeys.EVENTS, []);
-    this.transactions = loadFromLocal(StorageKeys.TRANSACTIONS, []);
-    this.budget = loadFromLocal(StorageKeys.BUDGET, { 
-      weekly: 50000, 
-      monthly: 200000,
-      limit: 50000
-    });
-    this.settings = loadFromLocal(StorageKeys.SETTINGS, {
-      hustleMode: false,
-      sapaMode: false,
-      notifications: true
-    });
-    this.aiPersonality = loadFromLocal(StorageKeys.AI_PERSONALITY, 'supportive'); // New property
-    this.userName = loadFromLocal(StorageKeys.USER_NAME, 'User'); // New property
-    this.aiProvider = loadFromLocal(StorageKeys.AI_PROVIDER, 'bedrock'); // 'bedrock' or 'edenai'
-    this.aiResponseStyle = loadFromLocal(StorageKeys.AI_RESPONSE_STYLE, 'normal'); // 'normal', 'concise', 'sapa', 'hustle'
-    this.customAiModes = loadFromLocal(StorageKeys.CUSTOM_AI_MODES, []); // New property for custom AI modes
-    this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
-      dailyBrief: null,
-      budgetInsight: null,
-      timeManagementAdvice: null, // New AI message type
-    });
+
+    this.todos = [];
+    this.events = [];
+    this.transactions = [];
+    this.budget = { weekly: 50000, monthly: 200000, limit: 50000 };
+    this.settings = { hustleMode: false, sapaMode: false, notifications: true };
+    this.aiPersonality = 'supportive';
+    this.userName = 'User';
+    this.aiProvider = 'bedrock';
+    this.aiResponseStyle = 'normal';
+    this.customAiModes = [];
+    this.aiMessages = { dailyBrief: null, budgetInsight: null, timeManagementAdvice: null };
     this.currentView = 'dashboard';
-    this.todoFilter = 'all'; // New property for todo filtering
-    this.notifications = loadFromLocal(StorageKeys.NOTIFICATIONS, []);
-    this.chatSessions = loadFromLocal(StorageKeys.CHAT_SESSIONS, []); // Stores multiple chat sessions
-    this.currentChatSessionId = loadFromLocal(StorageKeys.LAST_CHAT_SESSION_ID, null); // Tracks the currently active chat session
+    this.todoFilter = 'all';
+    this.notifications = [];
+    this.chatSessions = [];
+    this.currentChatSessionId = null;
+    
     this.listeners = new Map();
+  }
+
+  async init() {
+    if (!this.user || !this.user.uid) {
+      console.log('No user, skipping data initialization.');
+      return;
+    }
+    console.log('Initializing user data...');
+    const userData = await storage.loadUserData(this.user.uid);
+
+    this.todos = userData.todos || [];
+    this.events = userData.events || [];
+    this.transactions = userData.transactions || [];
+    this.budget = userData.budget || { weekly: 50000, monthly: 200000, limit: 50000 };
+    this.settings = userData.settings || { hustleMode: false, sapaMode: false, notifications: true };
+    this.aiMessages = userData.aiMessages || { dailyBrief: null, budgetInsight: null, timeManagementAdvice: null };
+    this.chatSessions = userData.chatSessions || [];
+    this.currentChatSessionId = userData.currentChatSessionId || (this.chatSessions.length > 0 ? this.chatSessions[0].id : null);
+    this.aiProvider = userData.aiProvider || 'bedrock';
+    this.aiResponseStyle = userData.aiResponseStyle || 'normal';
+    this.customAiModes = userData.customAiModes || [];
+    
+    console.log('User data initialized.');
+    this.emit('stateLoaded');
   }
 
   getRemainingBudget() {
@@ -67,7 +81,7 @@ class AppState {
           } else if (event.recurrence === 'monthly') {
             currentRecurrenceDate.setMonth(currentRecurrenceDate.getMonth() + 1);
           } else {
-            break; // Unknown recurrence type
+            break; 
           }
         }
       }
@@ -96,22 +110,23 @@ class AppState {
     }
   }
 
-  async setUser(user) { // Make it async because storage.get is async
+  async setUser(user) {
     console.log('setUser called with:', user);
-    this.user = user;
     if (user && user.uid) {
-      // Load user info from storage (which syncs with Firestore)
       const userInfo = await storage.get('userinfo', user.uid);
-      if (userInfo) {
-        this.user = { ...user, ...userInfo }; // Merge Firebase user with stored info
-        this.userName = userInfo.displayName || 'User';
-        saveToLocal(StorageKeys.USER_NAME, this.userName);
-      }
-      saveToLocal(StorageKeys.USER, this.user); // Save the user object to local storage
+      this.user = { ...user, ...(userInfo || {}) };
+      this.userName = this.user.displayName || 'User';
+      saveToLocal(StorageKeys.USER, this.user);
     } else {
-      this.userName = 'User'; // Reset if no user
-      saveToLocal(StorageKeys.USER_NAME, this.userName);
-      removeFromLocal(StorageKeys.USER); // Remove user from local storage on logout
+      this.user = null;
+      this.userName = 'User';
+      this.todos = [];
+      this.events = [];
+      this.transactions = [];
+      this.budget = { weekly: 50000, monthly: 200000, limit: 50000 };
+      this.settings = { hustleMode: false, sapaMode: false, notifications: true };
+      this.notifications = [];
+      this.chatSessions = [];
     }
     console.log('setUser finished. appState.user:', this.user);
     this.emit('userChanged', this.user);
@@ -124,9 +139,9 @@ class AppState {
 
   addTodo(todo) {
     this.todos.push(todo);
-    saveToLocal(StorageKeys.TODOS, this.todos);
+    storage.saveUserData(this.user.uid, 'todos', this.todos);
     this.setAIMessage('dailyBrief', null);
-    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+    this.setAIMessage('timeManagementAdvice', null);
     this.emit('todosChanged', this.todos);
   }
 
@@ -134,26 +149,26 @@ class AppState {
     const index = this.todos.findIndex(t => t.id === id);
     if (index !== -1) {
       this.todos[index] = { ...this.todos[index], ...updates };
-      saveToLocal(StorageKeys.TODOS, this.todos);
+      storage.saveUserData(this.user.uid, 'todos', this.todos);
       this.setAIMessage('dailyBrief', null);
-      this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+      this.setAIMessage('timeManagementAdvice', null);
       this.emit('todosChanged', this.todos);
     }
   }
 
   deleteTodo(id) {
     this.todos = this.todos.filter(t => t.id !== id);
-    saveToLocal(StorageKeys.TODOS, this.todos);
+    storage.saveUserData(this.user.uid, 'todos', this.todos);
     this.setAIMessage('dailyBrief', null);
-    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+    this.setAIMessage('timeManagementAdvice', null);
     this.emit('todosChanged', this.todos);
   }
 
   addEvent(event) {
     this.events.push({ ...event, recurrence: event.recurrence || 'none' });
-    saveToLocal(StorageKeys.EVENTS, this.events);
+    storage.saveUserData(this.user.uid, 'events', this.events);
     this.setAIMessage('dailyBrief', null);
-    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+    this.setAIMessage('timeManagementAdvice', null);
     this.emit('eventsChanged', this.events);
   }
 
@@ -161,84 +176,66 @@ class AppState {
     const index = this.events.findIndex(e => e.id === id);
     if (index !== -1) {
       this.events[index] = { ...this.events[index], ...updates };
-      saveToLocal(StorageKeys.EVENTS, this.events);
+      storage.saveUserData(this.user.uid, 'events', this.events);
       this.setAIMessage('dailyBrief', null);
-      this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+      this.setAIMessage('timeManagementAdvice', null);
       this.emit('eventsChanged', this.events);
     }
   }
 
   deleteEvent(id) {
     this.events = this.events.filter(e => e.id !== id);
-    saveToLocal(StorageKeys.EVENTS, this.events);
+    storage.saveUserData(this.user.uid, 'events', this.events);
     this.setAIMessage('dailyBrief', null);
-    this.setAIMessage('timeManagementAdvice', null); // Clear time management advice
+    this.setAIMessage('timeManagementAdvice', null);
     this.emit('eventsChanged', this.events);
   }
 
   addTransaction(transaction) {
     this.transactions.push(transaction);
-    saveToLocal(StorageKeys.TRANSACTIONS, this.transactions);
+    storage.saveUserData(this.user.uid, 'transactions', this.transactions);
     this.setAIMessage('dailyBrief', null);
-    this.setAIMessage('budgetInsight', null); // Clear budget insight
+    this.setAIMessage('budgetInsight', null);
     this.emit('transactionsChanged', this.transactions);
     this.emit('budgetChanged', this.budget);
   }
 
   setBudget(budgetData) {
     this.budget = { ...this.budget, ...budgetData };
-    saveToLocal(StorageKeys.BUDGET, this.budget);
-    this.setAIMessage('budgetInsight', null); // Clear budget insight
+    storage.saveUserData(this.user.uid, 'budget', this.budget);
+    this.setAIMessage('budgetInsight', null);
     this.emit('budgetChanged', this.budget);
   }
 
-  toggleHustleMode() {
-    this.settings.hustleMode = !this.settings.hustleMode;
-    saveToLocal(StorageKeys.SETTINGS, this.settings);
+  updateSettings(newSettings) {
+    this.settings = { ...this.settings, ...newSettings };
+    storage.saveUserData(this.user.uid, 'settings', this.settings);
     this.emit('settingsChanged', this.settings);
   }
-
-  toggleSapaMode() {
-    this.settings.sapaMode = !this.settings.sapaMode;
-    saveToLocal(StorageKeys.SETTINGS, this.settings);
-    this.emit('settingsChanged', this.settings);
-  }
-
 
   setAIMessage(type, message) {
     if (this.aiMessages.hasOwnProperty(type)) {
-      this.aiMessages[type] = marked.parse(message || ""); // Parse only the message
-      saveToLocal(StorageKeys.AI_MESSAGES, this.aiMessages); // Save the updated object
-      this.emit('aiMessagesChanged', this.aiMessages); // Emit the updated object
-    } else {
-      console.warn(`Attempted to set unknown AI message type: ${type}`);
+      this.aiMessages[type] = message ? marked.parse(message) : null;
+      storage.saveUserData(this.user.uid, 'aiMessages', this.aiMessages);
+      this.emit('aiMessagesChanged', this.aiMessages);
     }
   }
 
   addCustomAiMode(mode) {
     this.customAiModes.push(mode);
-    saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
+    storage.saveUserData(this.user.uid, 'customAiModes', this.customAiModes);
     this.emit('customAiModesChanged', this.customAiModes);
   }
 
   removeCustomAiMode(modeName) {
     this.customAiModes = this.customAiModes.filter(mode => mode.name !== modeName);
-    saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
+    storage.saveUserData(this.user.uid, 'customAiModes', this.customAiModes);
     this.emit('customAiModesChanged', this.customAiModes);
-  }
-
-  updateCustomAiMode(modeName, newInstruction) {
-    const index = this.customAiModes.findIndex(mode => mode.name === modeName);
-    if (index !== -1) {
-      this.customAiModes[index].instruction = newInstruction;
-      saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
-      this.emit('customAiModesChanged', this.customAiModes);
-    }
   }
 
   addNotification(notification) {
     const newNotification = { ...notification, id: generateId(), timestamp: new Date().toISOString(), read: false };
-    this.notifications.unshift(newNotification); // Add to the beginning
+    this.notifications.unshift(newNotification);
     saveToLocal(StorageKeys.NOTIFICATIONS, this.notifications);
     this.emit('notificationsChanged', this.notifications);
   }
@@ -255,13 +252,11 @@ class AppState {
   addChatMessage(sessionId, sender, message) {
     const session = this.chatSessions.find(s => s.id === sessionId);
     if (session) {
-      const newMessage = { id: generateId(), sender, message, timestamp: new Date().toISOString() }; // Added id
+      const newMessage = { id: generateId(), sender, message, timestamp: new Date().toISOString() };
       session.messages.push(newMessage);
-      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      storage.saveUserData(this.user.uid, 'chatSessions', this.chatSessions);
       this.emit('chatSessionsChanged', this.chatSessions);
       this.emit('currentChatSessionChanged', session);
-    } else {
-      console.warn(`Chat session with ID ${sessionId} not found.`);
     }
   }
 
@@ -269,11 +264,9 @@ class AppState {
     const session = this.chatSessions.find(s => s.id === sessionId);
     if (session) {
       session.messages = session.messages.filter(msg => msg.id !== messageId);
-      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      storage.saveUserData(this.user.uid, 'chatSessions', this.chatSessions);
       this.emit('chatSessionsChanged', this.chatSessions);
       this.emit('currentChatSessionChanged', session);
-    } else {
-      console.warn(`Chat session with ID ${sessionId} not found.`);
     }
   }
 
@@ -285,7 +278,7 @@ class AppState {
       createdAt: new Date().toISOString(),
     };
     this.chatSessions.push(newSession);
-    saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+    storage.saveUserData(this.user.uid, 'chatSessions', this.chatSessions);
     this.setCurrentChatSession(newSession.id);
     this.emit('chatSessionsChanged', this.chatSessions);
     return newSession;
@@ -295,19 +288,19 @@ class AppState {
     const session = this.chatSessions.find(s => s.id === sessionId);
     if (session) {
       session.title = newTitle;
-      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      storage.saveUserData(this.user.uid, 'chatSessions', this.chatSessions);
       this.emit('chatSessionsChanged', this.chatSessions);
       if (this.currentChatSessionId === sessionId) {
-        this.emit('currentChatSessionChanged', session); // Update title in header
+        this.emit('currentChatSessionChanged', session);
       }
     }
   }
 
   deleteChatSession(id) {
     this.chatSessions = this.chatSessions.filter(s => s.id !== id);
-    saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+    storage.saveUserData(this.user.uid, 'chatSessions', this.chatSessions);
     if (this.currentChatSessionId === id) {
-      this.currentChatSessionId = this.chatSessions.length > 0 ? this.chatSessions[0].id : null;
+      this.setCurrentChatSession(this.chatSessions.length > 0 ? this.chatSessions[0].id : null);
     }
     this.emit('chatSessionsChanged', this.chatSessions);
     this.emit('currentChatSessionChanged', this.getCurrentChatSession());
@@ -316,10 +309,8 @@ class AppState {
   setCurrentChatSession(id) {
     if (this.chatSessions.some(s => s.id === id)) {
       this.currentChatSessionId = id;
-      saveToLocal(StorageKeys.LAST_CHAT_SESSION_ID, id); // Save last active chat ID
+      storage.saveUserData(this.user.uid, 'currentChatSessionId', this.currentChatSessionId);
       this.emit('currentChatSessionChanged', this.getCurrentChatSession());
-    } else {
-      console.warn(`Attempted to set non-existent chat session ID: ${id}`);
     }
   }
 
@@ -336,7 +327,7 @@ class AppState {
     const completedTodos = this.todos.filter(t => t.completed).length;
     const highPriorityTodos = this.todos.filter(t => t.priority === 'high' && !t.completed).length;
     const upcomingTodos = this.todos.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) > new Date()).length;
-    return `Total todos: ${totalTodos}, Completed: ${completedTodos}, High priority: ${highPriorityTodos}, Upcoming: ${upcomingTodos}.`;
+    return `Total todos: ${totalTodos}, Completed: ${completedTodos}, High priority: ${highPriorityTodos}, Upcoming: ${upcomingTodos}`;
   }
 
   getCompressedEvents() {
@@ -344,16 +335,14 @@ class AppState {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const upcomingEvents = this.events.filter(e => new Date(e.date) >= today).length;
-    return `Total events: ${totalEvents}, Upcoming events: ${upcomingEvents}.`;
+    return `Total events: ${totalEvents}, Upcoming events: ${upcomingEvents}`;
   }
 
   getCompressedBudget() {
     const totalSpent = this.transactions.reduce((sum, t) => sum + t.amount, 0);
     const remaining = this.budget.limit - totalSpent;
-    return `Budget limit: ₦${this.budget.limit.toLocaleString()}, Total spent: ₦${totalSpent.toLocaleString()}, Remaining: ₦${remaining.toLocaleString()}.`;
+    return `Budget limit: ₦${this.budget.limit.toLocaleString()}, Total spent: ₦${totalSpent.toLocaleString()}, Remaining: ₦${remaining.toLocaleString()}`;
   }
 }
 
 export const appState = new AppState();
-
-

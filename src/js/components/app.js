@@ -28,13 +28,16 @@ export function renderApp(container) {
 
   const render = () => renderCurrentView(container);
 
-  appState.subscribe('userChanged', (user) => {
+  appState.subscribe('userChanged', async (user) => {
     if (!user) {
       appState.setView('auth');
-    } else if (appState.currentView === 'auth') {
-      appState.setView('dashboard');
     } else {
-      render();
+      await appState.init();
+      if (appState.currentView === 'auth') {
+        appState.setView('dashboard');
+      } else {
+        render();
+      }
     }
   });
 
