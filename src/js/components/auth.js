@@ -6,8 +6,9 @@ export function renderAuthScreen(container) {
     <div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-purple-50 flex items-center justify-center px-4">
       <div class="card max-w-md w-full">
         <div class="text-center mb-8">
+          <img src="assets/logo.png" alt="Theora Logo" class="mx-auto h-16 w-16 mb-4">
           <h1 class="text-4xl font-bold text-gradient mb-2">Theora</h1>
-          <p class="text-gray-600">Your Productivity & Financial Copilot</p>
+          <p id="authTitle" class="text-gray-600">Your AI <span class="typing-effect"></span></p>
         </div>
 
         <div class="mb-6">
@@ -123,4 +124,61 @@ export function renderAuthScreen(container) {
     appState.setUser({ uid: 'offline', email: 'offline@theora.app', offline: true });
     appState.setView('dashboard');
   });
+
+  // --- NEW: Typing Effect Logic ---
+  const wordsToType = ["Financial Copilot", "Productivity Hub", "Savings Tracker", "Task Manager"];
+  let wordIndex = 0;
+  let charIndex = 0;
+  let isDeleting = false;
+  const typeSpeed = 150;
+  const deleteSpeed = 100;
+  const pauseTime = 2000;
+  let typeEffectTimer; // To hold the timeout ID
+
+  function typeEffect() {
+    const authPage = container; // The container is the auth page
+    if (!authPage) return; // Failsafe
+
+    const typingSpan = authPage.querySelector(".typing-effect");
+
+    // ONLY run if the auth page is visible and the span exists
+    // For simplicity, we assume the container is the auth page and it's always "visible"
+    // when renderAuthScreen is called. A more robust solution would check actual visibility.
+    if (typingSpan) {
+      const currentWord = wordsToType[wordIndex];
+
+      if (isDeleting) {
+        // Deleting
+        typingSpan.textContent = currentWord.substring(0, charIndex - 1);
+        charIndex--;
+      } else {
+        // Typing
+        typingSpan.textContent = currentWord.substring(0, charIndex + 1);
+        charIndex++;
+      }
+
+      if (!isDeleting && charIndex === currentWord.length) {
+        // Word is fully typed, pause
+        isDeleting = true;
+        typeEffectTimer = setTimeout(typeEffect, pauseTime);
+      } else if (isDeleting && charIndex === 0) {
+        // Word is fully deleted
+        isDeleting = false;
+        wordIndex = (wordIndex + 1) % wordsToType.length; // Move to next word
+        typeEffectTimer = setTimeout(typeEffect, 500); // Short pause before typing
+      } else {
+        // Continue typing/deleting
+        typeEffectTimer = setTimeout(typeEffect, isDeleting ? deleteSpeed : typeSpeed);
+      }
+    }
+  }
+
+  // Start the effect once the component is rendered
+  typeEffectTimer = setTimeout(typeEffect, 1000); // A short delay to let the page render before starting
+
+  // Cleanup function to clear the timer when the component is removed/re-rendered
+  // This is a simplified approach. In a real SPA, you'd have a more robust lifecycle.
+  container.dataset.cleanupAuth = () => {
+    clearTimeout(typeEffectTimer);
+  };
 }
