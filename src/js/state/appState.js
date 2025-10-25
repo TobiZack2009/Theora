@@ -1,10 +1,11 @@
-import { loadFromLocal, saveToLocal, StorageKeys } from '../utils/storage.js';
+import { loadFromLocal, saveToLocal, StorageKeys, removeFromLocal, storage } from '../utils/storage.js';
 import { marked } from 'marked';
 import { generateId } from '../utils/helpers.js'; // Import generateId
 
 class AppState {
   constructor() {
-    this.user = null;
+    this.user = loadFromLocal(StorageKeys.USER, null); // Load user from local storage
+    console.log('AppState constructor: Initial user:', this.user);
     this.todos = loadFromLocal(StorageKeys.TODOS, []);
     this.events = loadFromLocal(StorageKeys.EVENTS, []);
     this.transactions = loadFromLocal(StorageKeys.TRANSACTIONS, []);
@@ -92,9 +93,25 @@ class AppState {
     }
   }
 
-  setUser(user) {
+  async setUser(user) { // Make it async because storage.get is async
+    console.log('setUser called with:', user);
     this.user = user;
-    this.emit('userChanged', user);
+    if (user && user.uid) {
+      // Load user info from storage (which syncs with Firestore)
+      const userInfo = await storage.get('userinfo', user.uid);
+      if (userInfo) {
+        this.user = { ...user, ...userInfo }; // Merge Firebase user with stored info
+        this.userName = userInfo.displayName || 'User';
+        saveToLocal(StorageKeys.USER_NAME, this.userName);
+      }
+      saveToLocal(StorageKeys.USER, this.user); // Save the user object to local storage
+    } else {
+      this.userName = 'User'; // Reset if no user
+      saveToLocal(StorageKeys.USER_NAME, this.userName);
+      removeFromLocal(StorageKeys.USER); // Remove user from local storage on logout
+    }
+    console.log('setUser finished. appState.user:', this.user);
+    this.emit('userChanged', this.user);
   }
 
   setView(view) {

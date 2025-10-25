@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
 const hasFirebaseCredentials = () => {
@@ -40,6 +40,7 @@ export {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
+  updateProfile,
   collection,
   addDoc,
   updateDoc,

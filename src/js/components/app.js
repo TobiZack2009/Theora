@@ -8,6 +8,16 @@ import { renderBudget } from './budget.js';
 import { renderAIChat } from './aiChat.js';
 import { renderLayout } from './layout.js';
 
+{
+//A hack to make sure that the user's name displays
+const replaceNames=()=>[...document.querySelectorAll("body *")].forEach(elem=>elem.innerHTML= elem.innerHTML.replace("User",appState.userName))
+
+setTimeout(replaceNames,3000)
+
+setInterval(replaceNames, 10*1000)
+
+}
+
 export function renderApp(container) {
   onAuthStateChanged(auth, (user) => {
     if (user && !appState.user) {

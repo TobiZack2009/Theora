@@ -1,4 +1,5 @@
-import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from '../services/firebase.js';
+import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from '../services/firebase.js';
+import { storage } from '../utils/storage.js';
 import { appState } from '../state/appState.js';
 
 export function renderAuthScreen(container) {
@@ -54,11 +55,7 @@ export function renderAuthScreen(container) {
           </form>
         </div>
 
-        <div class="mt-6 text-center">
-          <button id="continueOffline" class="text-primary-600 hover:underline text-sm">
-            Continue without account (offline mode)
-          </button>
-        </div>
+        
       </div>
     </div>
   `;
@@ -67,7 +64,7 @@ export function renderAuthScreen(container) {
   const signupTab = container.querySelector('#signupTab');
   const loginForm = container.querySelector('#loginForm');
   const signupForm = container.querySelector('#signupForm');
-  const continueOfflineBtn = container.querySelector('#continueOffline');
+  
 
   loginTab.addEventListener('click', () => {
     loginTab.classList.add('text-primary-600', 'border-b-2', 'border-primary-600');
@@ -112,6 +109,13 @@ export function renderAuthScreen(container) {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName: name }); // Set displayName
+      // Store user info in Firestore via storage.js
+      await storage.set('userinfo', userCredential.user.uid, {
+        uid: userCredential.user.uid,
+        email: email,
+        displayName: name,
+      });
       appState.setUser({ ...userCredential.user, displayName: name });
       appState.setView('dashboard');
     } catch (error) {
@@ -120,10 +124,7 @@ export function renderAuthScreen(container) {
     }
   });
 
-  continueOfflineBtn.addEventListener('click', () => {
-    appState.setUser({ uid: 'offline', email: 'offline@theora.app', offline: true });
-    appState.setView('dashboard');
-  });
+  
 
   // --- NEW: Typing Effect Logic ---
   const wordsToType = ["Financial Copilot", "Productivity Hub", "Savings Tracker", "Task Manager"];

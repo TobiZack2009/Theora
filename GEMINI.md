@@ -137,7 +137,7 @@ theora/
 
 #### 2. Firebase Integration (firebase.js)
 - **Conditional initialization**: Only initializes if credentials exist via `hasFirebaseCredentials()` check
-- **Offline graceful degradation**: Returns null for auth/db when offline, app continues with localStorage
+- **Offline graceful degradation**: Returns null for auth/db when offline. The app requires user authentication, so full functionality is not available without a logged-in user.
 - **No crashes**: Guards against Firebase errors in offline mode
 
 #### 3. AI Integration (ai.js)
@@ -207,13 +207,25 @@ budget: {
 }
 ```
 
+#### User Data
+```javascript
+{
+  uid: "firebase-user-id",
+  email: "user@example.com",
+  displayName: "Full Name", // Stored in Firebase Auth and Firestore
+  // Other user-specific preferences or data
+}
+```
+User data, including `displayName` and `email`, is stored in Firebase Authentication and also synchronized to the "userinfo" Firestore collection via `storage.js`. This ensures data persistence and offline accessibility.
+
 ---
 
 ## Core Features
 
 ### 1. Authentication
 - Firebase Auth (email/password)
-- Offline mode option (no account needed)
+- **Mandatory Login/Signup**: Users must log in or sign up to access the app. Offline mode without an account is no longer supported.
+- **User Data Storage**: User's full name and email are stored in Firebase Authentication's `displayName` and synchronized with the "userinfo" Firestore collection via `storage.js` for persistent and offline access.
 - Auto-persist user state
 
 ### 2. AI Chat
