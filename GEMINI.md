@@ -112,12 +112,12 @@ The color system is built on a primary brand palette, semantic colors for user f
 theora/
 ├── src/
 │   ├── index.html              # Main HTML entry point
-│   ├── css/
-│   │   └── styles.css          # Tailwind directives + custom styles
+│   ├── styles/
+│   │   └── main.css            # Tailwind directives + custom styles
 │   ├── js/
 │   │   ├── main.js             # App initialization and routing
-│   │   ├── components/         # UI components (Auth, Dashboard, Todos, Calendar, Budget)
-│   │   ├── services/           # External services (Firebase, AI)
+│   │   ├── components/         # UI components (App, Auth, Dashboard, Todos, Calendar, Budget, AIChat, Layout)
+│   │   ├── services/           # External services (Firebase, AI, Notification)
 │   │   ├── state/              # AppState management with localStorage
 │   │   └── utils/              # Helpers (storage, formatting, date functions)
 │   └── sw.js                   # Service Worker for offline functionality
@@ -214,26 +214,31 @@ budget: {
 - Offline mode option (no account needed)
 - Auto-persist user state
 
-### 2. Dashboard
+### 2. AI Chat
+- **Interactive AI Assistant**: A full chat interface allowing users to ask Theora questions directly.
+- **Context-Aware Responses**: The AI has access to the user's current todos, events, budget, and transactions to provide personalized and relevant advice.
+- **Chat History**: Conversations are saved, and users can create multiple chat sessions to organize their queries.
+
+### 3. Dashboard
 - AI-generated daily brief with personalized suggestions
 - Quick stats: urgent tasks, week spending, today's schedule, AI tips
 - Quick actions to navigate to other sections
 - Hustle Mode toggle for focus
 
-### 3. Todos
+### 4. Todos
 - Add/edit/delete todos with priority levels
 - Categories: School, Work, Side Hustle, Personal
 - Day/Week/Month filtered views
 - AI-powered smart suggestions for prioritization
 - Mark as complete with satisfaction tracking
 
-### 4. Calendar
+### 5. Calendar
 - Month/Week/Day views
 - Add/edit/delete events
 - Color-coded events
 - Event reminders
 
-### 5. Budget (Virtual Card System)
+### 6. Budget (Virtual Card System)
 - 3D flip card design showing balance
 - Manual transaction entry (simulated spending)
 - Category-based spending tracking (Food, Transport, Data, Education, Entertainment, Bills)
@@ -241,13 +246,13 @@ budget: {
 - Spending visualization with charts
 - AI budget insights and recommendations
 
-### 6. Settings
+### 7. Settings
 - Hustle Mode: Focus mode with motivational messaging
 - Sapa Mode: Budget-conscious suggestions when funds are low
 - Notification preferences
 - **Light & Dark Mode Toggle**: Switch between themes.
 
-### 7. Notifications
+### 8. Notifications
 - **Toast Notifications**: For event-driven feedback (e.g., "Task Added!").
 - **AI Tip Cards**: For proactive, contextual advice. The AI generates randomized, data-driven notifications that comment on various aspects of the user's activity, from specific transactions to individual tasks, ensuring the advice is always fresh and relevant.
 
@@ -328,7 +333,6 @@ npm run build
 - Export financial reports
 - Integration with mobile money APIs (MTN, Airtel, etc.)
 - Multi-currency support
-- Dark mode
 
 ---
 
