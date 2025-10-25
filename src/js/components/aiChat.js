@@ -2,6 +2,7 @@ import { appState } from '../state/appState.js';
 import { generateAIResponse, generateChatName } from '../services/ai.js'; // Added generateChatName
 import { generateId } from '../utils/helpers.js';
 import { getTheme } from '../utils/theme.js';
+import { marked } from 'marked';
 
 export function renderAIChat(container) {
   container.innerHTML = `
@@ -86,7 +87,7 @@ export function renderAIChat(container) {
 
     messageElement.className = messageClass;
     messageElement.innerHTML = `
-      <span class="${textClass}">${message}</span>
+      <span class="${textClass}">${marked.parse( message || "")}</span>
       <button class="delete-message-btn absolute top-0 right-0 -mt-2 -mr-2 bg-error text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-message-id="${messageId}">
         x
       </button>

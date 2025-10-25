@@ -132,7 +132,7 @@ async function fetchEdenAIResponse(prompt, options, previousHistory = [], global
  * @param {object} options - Options like maxTokens, temperature.
  * @returns {Promise<string>} - The AI-generated response.
  */
-export async function generateAIResponse(prompt, options = {}, previousHistory = [], globalAction = "", aiPersonality = 'supportive', userName = 'User') {
+export async function generateAIResponse(prompt, options = {}, previousHistory = [], globalAction = "", aiPersonality = 'supportive', userName = 'User', userData = {}) {
   // Define a mapping for personalities
   const personalityPrompts = {
     'supportive': `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide encouraging, helpful, and culturally relevant advice.`,
@@ -140,7 +140,24 @@ export async function generateAIResponse(prompt, options = {}, previousHistory =
     // Add more personalities as needed
   };
 
-  const effectiveGlobalAction = personalityPrompts[aiPersonality] || personalityPrompts['supportive'];
+  // Construct a comprehensive user context string from userData
+  const userContextString = `
+User's Current State:
+- Name: ${userName}
+- Budget Limit: ₦${userData.budget?.limit?.toLocaleString() || 'N/A'}
+- Remaining Budget: ₦${userData.budget?.remaining?.toLocaleString() || 'N/A'}
+- Total Todos: ${userData.todos?.length || 0}
+- Total Events: ${userData.events?.length || 0}
+- Last 3 Transactions: ${userData.transactions?.slice(0, 3).map(t => `₦${t.amount} on ${t.category}`).join(', ') || 'None'}
+- Urgent Todos: ${userData.todos?.filter(t => t.priority === 'high').map(t => t.title).join(', ') || 'None'}
+- Upcoming Events (next 24h): ${userData.events?.filter(e => new Date(e.date) - new Date() < 24 * 60 * 60 * 1000).map(e => e.title).join(', ') || 'None'}
+`;
+
+  const effectiveGlobalAction = `${personalityPrompts[aiPersonality] || personalityPrompts['supportive']}
+
+${userContextString}
+
+${globalAction}`;
 
   // Primary: Bedrock
   if (AI_PROVIDER === 'bedrock' && bedrockClient) {
@@ -233,11 +250,25 @@ export async function prioritizeTodos(todos) {
   if (appState.aiMessages.todoPrioritization) {
     return appState.aiMessages.todoPrioritization;
   }
+
+  const userName = appState.userName;
+  const aiPersonality = appState.aiPersonality;
+  const budget = appState.budget;
+  const events = appState.events;
+  const transactions = appState.transactions;
+
+  const userData = {
+    budget: budget,
+    todos: todos,
+    events: events,
+    transactions: transactions,
+  };
+
   const prompt = `Given these tasks: ${todos.map(t => `"${t.title}" (priority: ${t.priority}, due: ${t.dueDate || 'no date'})`).join(', ')}. 
   
   Suggest the optimal order to complete them, considering priority levels, deadlines, and typical student/young professional workflows. Return a brief recommendation.`;
   
-  const result = await generateAIResponse(prompt, { maxTokens: 256 });
+  const result = await generateAIResponse(prompt, { maxTokens: 256 }, [], "", aiPersonality, userName, userData);
   appState.setAIMessage('todoPrioritization', result);
   return result;
 }
@@ -247,12 +278,24 @@ export async function analyzeBudget(transactions, budget) {
     return appState.aiMessages.budgetInsight;
   }
   const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  const userName = appState.userName;
+  const aiPersonality = appState.aiPersonality;
+  const todos = appState.todos;
+  const events = appState.events;
+
+  const userData = {
+    budget: budget,
+    todos: todos,
+    events: events,
+    transactions: transactions,
+  };
   
   const prompt = `A user has spent ₦${totalSpent} out of their ₦${budget} budget. Recent transactions: ${transactions.slice(0, 5).map(t => `₦${t.amount} on ${t.category}`).join(', ')}. 
   
   Provide brief spending insights and suggestions for a Nigerian student/young professional.`;
   
-  const result = await generateAIResponse(prompt, { maxTokens: 200 });
+  const result = await generateAIResponse(prompt, { maxTokens: 200 }, [], "", aiPersonality, userName, userData);
   appState.setAIMessage('budgetInsight', result);
   return result;
 }
@@ -264,6 +307,15 @@ export async function generateDailyBrief(todos, budget, todayEvents) {
 
   const userName = appState.userName;
   const aiPersonality = appState.aiPersonality;
+  const transactions = appState.transactions; // Get transactions from appState
+  const events = appState.events; // Get all events from appState for comprehensive userData
+
+  const userData = {
+    budget: budget,
+    todos: todos,
+    events: events, // Use all events for userData, not just todayEvents
+    transactions: transactions,
+  };
 
   const prompt = `Create a brief, motivational daily game plan for ${userName}.
 
@@ -282,7 +334,7 @@ Your tasks:
 
 Example: "Morning ${userName}! You've got a full plate today. That "${todos[0]?.title || 'assignment'}" is your top priority. Knock it out first, then you can focus on your meeting this afternoon. You've got this! Your budget is looking solid at ₦${budget}."`;
 
-  const result = await generateAIResponse(prompt, { maxTokens: 250 }, [], "", aiPersonality, userName);
+  const result = await generateAIResponse(prompt, { maxTokens: 250 }, [], "", aiPersonality, userName, userData);
   appState.setAIMessage('dailyBrief', result);
   return result;
 }
@@ -293,6 +345,18 @@ export async function generateTimeManagementAdvice(todos, events) {
     ...todos.map(t => ({ type: 'todo', title: t.title, priority: t.priority, dueDate: t.dueDate, completed: t.completed })),
     ...events.map(e => ({ type: 'event', title: e.title, date: e.date, time: e.time, recurrence: e.recurrence }))
   ];
+
+  const userName = appState.userName;
+  const aiPersonality = appState.aiPersonality;
+  const budget = appState.budget;
+  const transactions = appState.transactions;
+
+  const userData = {
+    budget: budget,
+    todos: todos,
+    events: events,
+    transactions: transactions,
+  };
 
   const prompt = `As Theora, an AI productivity and financial copilot, provide concise time management advice (about 3 paragraphs) to a Nigerian student or young professional. Base your advice on the following current tasks and events:
 
@@ -305,7 +369,7 @@ Your advice should focus on:
 
 Ensure the tone is encouraging, culturally relevant (e.g., acknowledging "hustle"), and highly actionable. The response should be well-structured into about 3 paragraphs.`
 
-  const result = await generateAIResponse(prompt, { maxTokens: 300 }); // Adjusted maxTokens for ~3 paragraphs
+  const result = await generateAIResponse(prompt, { maxTokens: 300 }, [], "", aiPersonality, userName, userData); // Adjusted maxTokens for ~3 paragraphs
   appState.setAIMessage('timeManagementAdvice', result);
   return result;
 }
