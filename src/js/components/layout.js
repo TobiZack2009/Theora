@@ -9,7 +9,7 @@ function renderNavItems() {
       data-view="${view}"
       class="nav-item block w-full text-left py-2 px-4 font-medium capitalize transition-colors duration-200
       ${appState.currentView === view
-        ? 'bg-primary-blue text-white'
+        ? 'bg-gradient-to-r from-gradient-start to-gradient-end text-white'
         : 'text-text-secondary hover:bg-bg-primary hover:text-text-primary'}"
     >
       ${view}

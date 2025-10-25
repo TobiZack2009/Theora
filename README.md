@@ -3,13 +3,15 @@
 This is a platform that empowers young people to manage their time and money wisely. It was built primarily using the Gemini Agent. 
 
 `GEMINI.md` contains comprehensive documentation concerning the app's source code.
-The app uses Tailwind.CSS for styling and Rollup for module bundling.
+
+ The app uses Tailwind.CSS for styling and Rollup for module bundling.
 
 ## Running the app
 Run `npm i` to install dependencies.
 Run `npm run dev` to start an autoreloading development server.
 Use `npm run build` to generate a build of the app in `site`.
-Note: if newer changes are not showing in the preview or in the build, hold `Shift` and press `Reload` or `Refresh` in your browser.
+
+ Note: if newer changes are not showing in the preview or in the build, hold `Shift` and press `Reload` or `Refresh` in your browser.
 
 
 ## Prerequisites
