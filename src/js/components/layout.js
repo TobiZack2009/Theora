@@ -60,7 +60,7 @@ export function renderLayout(container, viewRenderer) {
       </nav>
 
       <!-- Mobile Navigation -->
-      <div id="mobile-nav" class="hidden md:hidden bg-bg-secondary border-b border-border-color">
+      <div id="mobile-nav" class="hidden md:hidden bg-bg-secondary border-b border-border-color fixed top-[61px] left-0 right-0 z-40">
         <div class="container mx-auto px-4 py-2">
           ${renderNavItems()}
            <div class="mt-4 pt-4 border-t border-border-color flex items-center justify-around">
