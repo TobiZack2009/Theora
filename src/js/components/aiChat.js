@@ -6,10 +6,10 @@ import { marked } from 'marked';
 
 export function renderAIChat(container) {
   container.innerHTML = `
-    <div class="ai-chat-layout flex h-[calc(100vh-180px)]">
+    <div class="ai-chat-layout flex h-[calc(100vh-180px)] relative">
       <!-- Chat Sessions Sidebar -->
-      <div class="chat-sidebar w-64 bg-bg-secondary border-r border-border-color p-4 overflow-y-auto">
-        <button id="new-chat-btn" class="w-full bg-primary-blue text-grey py-2 rounded-lg mb-4 hover:bg-primary-blue-dark transition-colors duration-200">
+      <div id="chat-sidebar" class="chat-sidebar absolute top-0 left-0 h-full w-64 bg-bg-secondary border-r border-border-color p-4 overflow-y-auto z-10 transform -translate-x-full md:relative md:translate-x-0 md:block transition-transform duration-300 ease-in-out">
+        <button id="new-chat-btn" class="w-full bg-primary-blue text-white py-2 rounded-lg mb-4 hover:bg-primary-blue-dark transition-colors duration-200">
           + New Chat
         </button>
         <div id="chat-sessions-list">
@@ -20,6 +20,9 @@ export function renderAIChat(container) {
       <!-- Main Chat Window -->
       <div class="main-chat-window flex-1 flex flex-col bg-bg-primary rounded-lg shadow-md">
         <div class="chat-header bg-bg-secondary border-b border-border-color p-4 flex items-center justify-between rounded-t-lg">
+          <button id="chat-menu-toggle" class="md:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-bg-primary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
           <h2 id="current-chat-title" class="text-xl font-bold"></h2>
           <button id="delete-chat-btn" class="text-error hover:text-red-700 transition-colors duration-200">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -41,6 +44,8 @@ export function renderAIChat(container) {
     </div>
   `;
 
+  const chatSidebar = container.querySelector('#chat-sidebar');
+  const chatMenuToggle = container.querySelector('#chat-menu-toggle');
   const chatSessionsList = container.querySelector('#chat-sessions-list');
   const newChatBtn = container.querySelector('#new-chat-btn');
   const currentChatTitle = container.querySelector('#current-chat-title');
@@ -49,6 +54,11 @@ export function renderAIChat(container) {
   const chatInputField = container.querySelector('#chat-input-field');
   const sendChatBtn = container.querySelector('#send-chat-btn');
   const chatLoadingIndicator = container.querySelector('#chat-loading-indicator');
+
+  // --- Event Listeners ---
+  chatMenuToggle.addEventListener('click', () => {
+    chatSidebar.classList.toggle('-translate-x-full');
+  });
 
   // --- Helper Functions ---
   function renderChatSessions() {
@@ -64,6 +74,10 @@ export function renderAIChat(container) {
     chatSessionsList.querySelectorAll('.chat-session-item').forEach(item => {
       item.addEventListener('click', (e) => {
         appState.setCurrentChatSession(e.currentTarget.dataset.sessionId);
+        // Hide sidebar on selection in mobile
+        if (window.innerWidth < 768) {
+          chatSidebar.classList.add('-translate-x-full');
+        }
       });
     });
   }
