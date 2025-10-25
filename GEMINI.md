@@ -148,6 +148,8 @@ theora/
 - **Deeply Context-Aware**: Passes a rich snapshot of user data (todos, budget, events, transactions) for personalized suggestions. For notifications, it randomly selects a topic and provides specific data points (e.g., a random todo, the last transaction) to generate highly relevant, data-driven advice.
 - **Configuration**: The primary AI provider (`AI_PROVIDER`), AWS Bedrock credentials (via environment variables), and Eden AI credentials (API key and model as constants) are configured in `rollup.config.js`.
 
+
+
 #### 4. Build System (rollup.config.js)
 - **Bundling**: Rollup with plugins for Node.js polyfills (@rollup/plugin-node-resolve, @rollup/plugin-commonjs)
 - **Environment variables**: @rollup/plugin-replace injects `import.meta.env.*` values at build time, including AI provider configuration.

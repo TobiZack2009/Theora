@@ -29,13 +29,13 @@ export default {
 
       // --- AWS Bedrock Configuration (from environment variables) ---
       'import.meta.env.AWS_ACCESS_KEY_ID': JSON.stringify(process.env.AWS_ACCESS_KEY_ID || "AKIAZYCS7YLHHIAYLLR3"),
-      
+
       'import.meta.env.AWS_SECRET_ACCESS_KEY': JSON.stringify(process.env.AWS_SECRET_ACCESS_KEY || "/x4KxsNZCnUJkQlGdKl54uE+HH477dgZr9uI9yxo"),
       'import.meta.env.AWS_REGION': JSON.stringify(process.env.AWS_REGION || 'us-east-1'),
 
       // --- Eden AI Configuration (as constants) ---
       'import.meta.env.EDEN_AI_API_KEY': JSON.stringify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDBjOWRhZWUtNmY4Ni00YWIzLWFmYmUtOGVhMzFlNDM2NzUwIiwidHlwZSI6ImFwaV90b2tlbiIsIm5hbWUiOiJ0ZXN0MiIsImlzX2N1c3RvbSI6dHJ1ZX0.NJjYrUzIywdV5EZJoErUd3WMNz4bbNA1m-DlCCH87Ac'), // Replace with your actual key
-      'import.meta.env.EDEN_AI_MODEL': JSON.stringify('deepseek/deepseek-chat'), // Specify desired Eden AI model
+      'import.meta.env.EDEN_AI_MODEL': JSON.stringify('deepseek'), // Specify desired Eden AI model
 
       // --- Firebase Configuration ---
       'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY || "AIzaSyBb8iSt9rC0yCc-oyAJU2P7b6AHZlrCQ-E"),

@@ -18,6 +18,8 @@ class AppState {
       sapaMode: false,
       notifications: true
     });
+    this.aiPersonality = loadFromLocal(StorageKeys.AI_PERSONALITY, 'supportive'); // New property
+    this.userName = loadFromLocal(StorageKeys.USER_NAME, 'User'); // New property
     this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
       dailyBrief: null,
       budgetInsight: null,
@@ -27,7 +29,7 @@ class AppState {
     this.todoFilter = 'all'; // New property for todo filtering
     this.notifications = loadFromLocal(StorageKeys.NOTIFICATIONS, []);
     this.chatSessions = loadFromLocal(StorageKeys.CHAT_SESSIONS, []); // Stores multiple chat sessions
-    this.currentChatSessionId = null; // Tracks the currently active chat session
+    this.currentChatSessionId = loadFromLocal(StorageKeys.LAST_CHAT_SESSION_ID, null); // Tracks the currently active chat session
     this.listeners = new Map();
   }
 
@@ -212,8 +214,20 @@ class AppState {
   addChatMessage(sessionId, sender, message) {
     const session = this.chatSessions.find(s => s.id === sessionId);
     if (session) {
-      const newMessage = { sender, message, timestamp: new Date().toISOString() };
+      const newMessage = { id: generateId(), sender, message, timestamp: new Date().toISOString() }; // Added id
       session.messages.push(newMessage);
+      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      this.emit('chatSessionsChanged', this.chatSessions);
+      this.emit('currentChatSessionChanged', session);
+    } else {
+      console.warn(`Chat session with ID ${sessionId} not found.`);
+    }
+  }
+
+  deleteChatMessage(sessionId, messageId) {
+    const session = this.chatSessions.find(s => s.id === sessionId);
+    if (session) {
+      session.messages = session.messages.filter(msg => msg.id !== messageId);
       saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
       this.emit('chatSessionsChanged', this.chatSessions);
       this.emit('currentChatSessionChanged', session);
@@ -236,6 +250,18 @@ class AppState {
     return newSession;
   }
 
+  updateChatSessionTitle(sessionId, newTitle) {
+    const session = this.chatSessions.find(s => s.id === sessionId);
+    if (session) {
+      session.title = newTitle;
+      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      this.emit('chatSessionsChanged', this.chatSessions);
+      if (this.currentChatSessionId === sessionId) {
+        this.emit('currentChatSessionChanged', session); // Update title in header
+      }
+    }
+  }
+
   deleteChatSession(id) {
     this.chatSessions = this.chatSessions.filter(s => s.id !== id);
     saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
@@ -249,7 +275,7 @@ class AppState {
   setCurrentChatSession(id) {
     if (this.chatSessions.some(s => s.id === id)) {
       this.currentChatSessionId = id;
-      saveToLocal(StorageKeys.CHAT_SESSIONS, this.chatSessions);
+      saveToLocal(StorageKeys.LAST_CHAT_SESSION_ID, id); // Save last active chat ID
       this.emit('currentChatSessionChanged', this.getCurrentChatSession());
     } else {
       console.warn(`Attempted to set non-existent chat session ID: ${id}`);
@@ -262,6 +288,28 @@ class AppState {
 
   getCurrentChatSession() {
     return this.chatSessions.find(s => s.id === this.currentChatSessionId);
+  }
+
+  getCompressedTodos() {
+    const totalTodos = this.todos.length;
+    const completedTodos = this.todos.filter(t => t.completed).length;
+    const highPriorityTodos = this.todos.filter(t => t.priority === 'high' && !t.completed).length;
+    const upcomingTodos = this.todos.filter(t => !t.completed && t.dueDate && new Date(t.dueDate) > new Date()).length;
+    return `Total todos: ${totalTodos}, Completed: ${completedTodos}, High priority: ${highPriorityTodos}, Upcoming: ${upcomingTodos}.`;
+  }
+
+  getCompressedEvents() {
+    const totalEvents = this.events.length;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingEvents = this.events.filter(e => new Date(e.date) >= today).length;
+    return `Total events: ${totalEvents}, Upcoming events: ${upcomingEvents}.`;
+  }
+
+  getCompressedBudget() {
+    const totalSpent = this.transactions.reduce((sum, t) => sum + t.amount, 0);
+    const remaining = this.budget.limit - totalSpent;
+    return `Budget limit: ₦${this.budget.limit.toLocaleString()}, Total spent: ₦${totalSpent.toLocaleString()}, Remaining: ₦${remaining.toLocaleString()}.`;
   }
 }
 

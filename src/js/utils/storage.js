@@ -7,7 +7,10 @@ export const StorageKeys = {
   SETTINGS: 'theora_settings',
   AI_MESSAGES: 'theora_ai_messages',
   NOTIFICATIONS: 'theora_notifications',
-  CHAT_SESSIONS: 'theora_chat_sessions'
+  CHAT_SESSIONS: 'theora_chat_sessions',
+  AI_PERSONALITY: 'theora_ai_personality',
+  USER_NAME: 'theora_user_name',
+  LAST_CHAT_SESSION_ID: 'theora_last_chat_session_id', // New key
 };
 
 export function saveToLocal(key, data) {

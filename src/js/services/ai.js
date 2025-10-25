@@ -87,23 +87,25 @@ async function fetchBedrockResponse(prompt, options) {
 
 // --- Eden AI API Call ---
 
-async function fetchEdenAIResponse(prompt, options) {
+async function fetchEdenAIResponse(prompt, options, previousHistory = [], globalAction = "") {
   if (!EDEN_AI_CREDENTIALS.apiKey || EDEN_AI_CREDENTIALS.apiKey === 'YOUR_EDEN_AI_API_KEY') {
     throw new Error('Eden AI API key not configured.');
   }
 
-  const response = await fetch('https://api.edenai.run/v2/text/generation', {
+  const response = await fetch('https://api.edenai.run/v2/text/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${EDEN_AI_CREDENTIALS.apiKey}`,
     },
     body: JSON.stringify({
-      providers: 'openai',
+      providers: 'deepseek',
       text: prompt,
       model: EDEN_AI_CREDENTIALS.model,
       max_tokens: options.maxTokens || 512,
       temperature: options.temperature || 0.7,
+      previous_history: previousHistory,
+      chatbot_global_action: globalAction
     }),
   });
 
@@ -113,7 +115,8 @@ async function fetchEdenAIResponse(prompt, options) {
   }
 
   const data = await response.json();
-  const generatedText = data.openai?.generated_text;
+  console.log(data)
+  const generatedText = data.deepseek.generated_text;
 
   if (!generatedText) {
     throw new Error('Invalid response structure from Eden AI.');
@@ -129,19 +132,35 @@ async function fetchEdenAIResponse(prompt, options) {
  * @param {object} options - Options like maxTokens, temperature.
  * @returns {Promise<string>} - The AI-generated response.
  */
-export async function generateAIResponse(prompt, options = {}) {
+export async function generateAIResponse(prompt, options = {}, previousHistory = [], globalAction = "", aiPersonality = 'supportive', userName = 'User') {
+  // Define a mapping for personalities
+  const personalityPrompts = {
+    'supportive': `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide encouraging, helpful, and culturally relevant advice.`,
+    'direct': `As Theora, a direct and concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide straightforward, actionable, and culturally relevant advice.`,
+    // Add more personalities as needed
+  };
+
+  const effectiveGlobalAction = personalityPrompts[aiPersonality] || personalityPrompts['supportive'];
+
   // Primary: Bedrock
   if (AI_PROVIDER === 'bedrock' && bedrockClient) {
     try {
-      return await fetchBedrockResponse(prompt, options);
+      // For Bedrock, integrate previousHistory and effectiveGlobalAction into the prompt
+      const bedrockPrompt = `${effectiveGlobalAction ? effectiveGlobalAction + '\n\n' : ''}${previousHistory.map(msg => `${msg.sender}: ${msg.message}`).join('\n')}\n${prompt}`;
+      const response = await fetchBedrockResponse(bedrockPrompt, options);
+      return response;
     } catch (error) {
       console.warn(`Bedrock request failed: ${error.message}. Falling back to Eden AI.`);
       // Fallback: Eden AI
       try {
-        return await fetchEdenAIResponse(prompt, options);
+        const response = await fetchEdenAIResponse(prompt, options, previousHistory, effectiveGlobalAction);
+        return response.generated_text || response.completion || response.text || response;
       } catch (fallbackError) {
         console.error(`Eden AI fallback failed: ${fallbackError.message}. Using mock response.`);
         return getMockAIResponse(prompt);
+      } finally {
+        // Ensure toolResults is reset or handled appropriately if this path is taken
+        // For now, we assume no tool calls are processed in this direct fallback path
       }
     }
   }
@@ -149,13 +168,28 @@ export async function generateAIResponse(prompt, options = {}) {
   // Primary: Eden AI
   if (AI_PROVIDER === 'edenai') {
     try {
-      return await fetchEdenAIResponse(prompt, options);
+      const response = await fetchEdenAIResponse(prompt, options, previousHistory, effectiveGlobalAction);
+      // Handle tool calls if they exist in the response
+      if (response.tool_calls && response.tool_calls.length > 0) {
+        console.log('AI requested tool calls:', response.tool_calls);
+        const executedToolResults = [];
+        for (const toolCall of response.tool_calls) {
+          const result = await executeTool(toolCall);
+          executedToolResults.push(result);
+        }
+        // Make a second call to Eden AI with tool results
+        const finalAIResponse = await fetchEdenAIResponse(prompt, options, previousHistory, effectiveGlobalAction, 'auto', toolDefinitions, executedToolResults);
+        return finalAIResponse.generated_text || finalAIResponse.completion || finalAIResponse.text;
+      }
+      return response.generated_text || response.completion || response.text;
     } catch (error) {
       console.warn(`Eden AI request failed: ${error.message}. Falling back to Bedrock.`);
       // Fallback: Bedrock
       if (bedrockClient) {
         try {
-          return await fetchBedrockResponse(prompt, options);
+          const bedrockPrompt = `${effectiveGlobalAction ? effectiveGlobalAction + '\n\n' : ''}${previousHistory.map(msg => `${msg.sender}: ${msg.message}`).join('\n')}\n${prompt}`;
+          const response = await fetchBedrockResponse(bedrockPrompt, options);
+          return response;
         } catch (fallbackError) {
           console.error(`Bedrock fallback failed: ${fallbackError.message}. Using mock response.`);
           return getMockAIResponse(prompt);
@@ -166,7 +200,7 @@ export async function generateAIResponse(prompt, options = {}) {
       }
     }
   }
-  
+
   // Default fallback if no provider is configured or the primary one fails without a fallback
   console.warn('No primary AI provider configured or available. Using mock response.');
   return getMockAIResponse(prompt);
@@ -228,7 +262,10 @@ export async function generateDailyBrief(todos, budget, todayEvents) {
     return appState.aiMessages.dailyBrief;
   }
 
-  const prompt = `As Theora, a financial copilot for a Nigerian student, create a brief, motivational daily game plan.
+  const userName = appState.userName;
+  const aiPersonality = appState.aiPersonality;
+
+  const prompt = `Create a brief, motivational daily game plan for ${userName}.
 
 Here's the user's situation:
 - **Budget:** ₦${budget} remaining for the week.
@@ -238,14 +275,14 @@ Here's the user's situation:
   ${todayEvents.map(e => `- "${e.title}" at ${e.time || 'All day'}`).join('\n  ')}}
 
 Your tasks:
-1.  **Acknowledge the user's hustle.**
+1.  **Acknowledge ${userName}'s hustle.**
 2.  **Analyze the tasks and events.** Point out the most critical item for today based on urgency, content, and remaining time.
 3.  **Provide a concrete, actionable suggestion.** What should they focus on first?
 4.  **Keep it concise and encouraging (2-3 sentences).**
 
-Example: "Morning! You've got a full plate today. That "${todos[0]?.title || 'assignment'}" is your top priority. Knock it out first, then you can focus on your meeting this afternoon. You've got this! Your budget is looking solid at ₦${budget}."`;
+Example: "Morning ${userName}! You've got a full plate today. That "${todos[0]?.title || 'assignment'}" is your top priority. Knock it out first, then you can focus on your meeting this afternoon. You've got this! Your budget is looking solid at ₦${budget}."`;
 
-  const result = await generateAIResponse(prompt, { maxTokens: 250 });
+  const result = await generateAIResponse(prompt, { maxTokens: 250 }, [], "", aiPersonality, userName);
   appState.setAIMessage('dailyBrief', result);
   return result;
 }
@@ -311,33 +348,36 @@ export async function generateNotification(budget, todos, events, transactions) 
   let notificationType = selectedNotification.type;
   let message = '';
 
-  const userContext = `Context for AI: User has ${todos.length} tasks, ${events.length} events. Remaining budget: ₦${remainingBudget.toLocaleString()}.`;
+  const userName = appState.userName;
+  const aiPersonality = appState.aiPersonality;
+
+  const userContext = `Context for AI: User ${userName} has ${todos.length} tasks, ${events.length} events. Remaining budget: ₦${remainingBudget.toLocaleString()}.`;
 
   switch (selectedNotification.type) {
     case 'todo':
       const todo = selectedNotification.item;
-      prompt = `As Theora, write a short, direct notification (1-2 sentences) about this task: "${todo.title}" (Priority: ${todo.priority}). Reference their budget (₦${remainingBudget.toLocaleString()}) or task count (${todos.length}) to add context. Be specific. ${userContext}`;
+      prompt = `Write a short, direct notification (1-2 sentences) for ${userName} about this task: "${todo.title}" (Priority: ${todo.priority}). Reference their budget (₦${remainingBudget.toLocaleString()}) or task count (${todos.length}) to add context. Be specific. ${userContext}`;
       break;
     case 'event':
       const event = selectedNotification.item;
-      prompt = `As Theora, write a short, direct notification (1-2 sentences) for this event: "${event.title}" on ${event.date}. State how much budget is left (₦${remainingBudget.toLocaleString()}) and remind them to plan accordingly. Be specific. ${userContext}`;
+      prompt = `Write a short, direct notification (1-2 sentences) for ${userName} for this event: "${event.title}" on ${event.date}. State how much budget is left (₦${remainingBudget.toLocaleString()}) and remind them to plan accordingly. Be specific. ${userContext}`;
       break;
     case 'budget':
-      prompt = `As Theora, write a short, direct notification (1-2 sentences) about the user's budget. State they have ₦${selectedNotification.item.remaining.toLocaleString()} left. Mention their total number of tasks (${todos.length}) as something to focus on. ${userContext}`;
+      prompt = `Write a short, direct notification (1-2 sentences) for ${userName} about their budget. State they have ₦${selectedNotification.item.remaining.toLocaleString()} left. Mention their total number of tasks (${todos.length}) as something to focus on. ${userContext}`;
       break;
     case 'transaction':
       const transaction = selectedNotification.item;
-      prompt = `As Theora, write a short, direct notification (1-2 sentences) commenting on a user transaction: ₦${transaction.amount} on ${transaction.category}. Give a specific, brief opinion on this spending and state their remaining budget (₦${remainingBudget.toLocaleString()}). ${userContext}`;
+      prompt = `Write a short, direct notification (1-2 sentences) for ${userName} commenting on a user transaction: ₦${transaction.amount} on ${transaction.category}. Give a specific, brief opinion on this spending and state their remaining budget (₦${remainingBudget.toLocaleString()}). ${userContext}`;
       break;
     case 'general':
     default:
-      prompt = `As Theora, write a short, motivational tip (1-2 sentences). Directly reference one piece of user data: remaining budget (₦${remainingBudget.toLocaleString()}), number of tasks (${todos.length}), or number of events (${events.length}). Make the tip highly specific to that data point. ${userContext}`;
+      prompt = `Write a short, motivational tip (1-2 sentences) for ${userName}. Directly reference one piece of user data: remaining budget (₦${remainingBudget.toLocaleString()}), number of tasks (${todos.length}), or number of events (${events.length}). Make the tip highly specific to that data point. ${userContext}`;
       notificationType = 'general';
       break;
   }
 
   try {
-    message = await generateAIResponse(prompt, { maxTokens: 80 });
+    message = await generateAIResponse(prompt, { maxTokens: 80 }, [], "", aiPersonality, userName);
   } catch (error) {
     console.error('AI Notification Error:', error);
     message = 'Stay productive! Theora is here to help.';
@@ -345,4 +385,17 @@ export async function generateNotification(budget, todos, events, transactions) 
   }
 
   return { message, type: notificationType };
+}
+
+export async function generateChatName(initialPrompt) {
+  const namingPrompt = `Given the following initial chat message, generate a very concise (3-5 words) and descriptive title for the chat session. The title should capture the main topic.\n  Initial Message: "${initialPrompt}"\n  Chat Title:`;
+  try {
+    // Use generateAIResponse with a very low maxTokens to ensure conciseness
+    const result = await generateAIResponse(namingPrompt, { maxTokens: 15, temperature: 0.5 });
+    // Clean up any potential leading/trailing whitespace or quotes from the AI response
+    return result.trim().replace(/["']/g, '');
+  } catch (error) {
+    console.error('Error generating chat name:', error);
+    return 'New Chat'; // Fallback title
+  }
 }

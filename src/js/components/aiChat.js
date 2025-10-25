@@ -1,5 +1,5 @@
 import { appState } from '../state/appState.js';
-import { generateAIResponse } from '../services/ai.js';
+import { generateAIResponse, generateChatName } from '../services/ai.js'; // Added generateChatName
 import { generateId } from '../utils/helpers.js';
 import { getTheme } from '../utils/theme.js';
 
@@ -67,11 +67,11 @@ export function renderAIChat(container) {
     });
   }
 
-  function appendMessage(sender, message) {
+  function appendMessage(sender, message, messageId) { // Added messageId
     const messageElement = document.createElement('div');
     const theme = getTheme(); // Get current theme
 
-    let messageClass = 'mb-2 p-2 rounded-lg max-w-[70%]';
+    let messageClass = 'mb-2 p-2 rounded-lg max-w-[70%] relative group'; // Added relative group for delete button
     let textClass = '';
 
     if (sender === 'user') {
@@ -85,7 +85,12 @@ export function renderAIChat(container) {
     }
 
     messageElement.className = messageClass;
-    messageElement.innerHTML = `<span class="${textClass}">${message}</span>`;
+    messageElement.innerHTML = `
+      <span class="${textClass}">${message}</span>
+      <button class="delete-message-btn absolute top-0 right-0 -mt-2 -mr-2 bg-error text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-message-id="${messageId}">
+        x
+      </button>
+    `;
     chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
   }
@@ -96,7 +101,15 @@ export function renderAIChat(container) {
     if (currentSession) {
       currentChatTitle.innerHTML = currentSession.title;
       deleteChatBtn.classList.remove('hidden');
-      currentSession.messages.forEach(msg => appendMessage(msg.sender, msg.message));
+      currentSession.messages.forEach(msg => appendMessage(msg.sender, msg.message, msg.id)); // Pass msg.id
+
+      // Add event listeners for delete buttons
+      chatMessages.querySelectorAll('.delete-message-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const messageIdToDelete = e.currentTarget.dataset.messageId;
+          appState.deleteChatMessage(currentSession.id, messageIdToDelete);
+        });
+      });
     } else {
       currentChatTitle.innerHTML = 'No Chat Selected';
       deleteChatBtn.classList.add('hidden');
@@ -118,8 +131,15 @@ export function renderAIChat(container) {
   if (appState.chatSessions.length === 0) {
     const newSession = appState.addChatSession('New Chat');
     appState.setCurrentChatSession(newSession.id);
-  } else if (!appState.currentChatSessionId) {
-    appState.setCurrentChatSession(appState.chatSessions[0].id);
+  } else {
+    // If there are chat sessions, try to set the last active one
+    const lastActiveSessionId = appState.currentChatSessionId;
+    if (lastActiveSessionId && appState.getChatSession(lastActiveSessionId)) {
+      appState.setCurrentChatSession(lastActiveSessionId);
+    } else {
+      // If last active session is invalid or not found, default to the first one
+      appState.setCurrentChatSession(appState.chatSessions[0].id);
+    }
   }
 
   renderChatSessions();
@@ -146,18 +166,45 @@ export function renderAIChat(container) {
       chatInputField.value = '';
       showLoadingIndicator();
 
+      // If it's a new chat and the first message, generate a name
+      if (currentSession.messages.length === 1) { // Only the user's first message is present
+        appState.updateChatSessionTitle(currentSession.id, 'Generating title...'); // Placeholder
+        generateChatName(userMessage).then(generatedName => {
+          appState.updateChatSessionTitle(currentSession.id, generatedName);
+        }).catch(() => {
+          appState.updateChatSessionTitle(currentSession.id, 'New Chat');
+        });
+      }
+
       try {
-        const context = {
-          todos: appState.todos,
-          events: appState.events,
-          budget: appState.budget,
-          transactions: appState.transactions,
-          chatHistory: currentSession.messages.map(msg => `${msg.sender}: ${msg.message}`).join('\n'),
-        };
+        // Prepare previousHistory for Eden AI format
+        const previousHistory = currentSession.messages.map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          message: msg.message
+        }));
 
-        const aiPrompt = `As Theora, a supportive AI assistant, respond to the user's message. You have access to their data. Provide contextual advice based on their todos, events, budget, and transactions. Be encouraging and helpful. \n\nUser Data: ${JSON.stringify(context, null, 2)}\n\nUser: ${userMessage}\nTheora:`;
+        // Define chatbot_global_action (system message)
+        // Define chatbot_global_action (system message)
+        const globalAction = `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. You have access to the user's summarized data. Provide contextual advice based on this data. Be encouraging, helpful, and culturally relevant.
+        User Data Summary:
+        - Todos: ${appState.getCompressedTodos()}
+        - Events: ${appState.getCompressedEvents()}
+        - Budget: ${appState.getCompressedBudget()}`;
 
-        const aiResponse = await generateAIResponse(aiPrompt, { maxTokens: 200 });
+        // Construct a concise prompt for the current user message
+        const aiPrompt = userMessage; // The actual user message
+
+        const aiPersonality = appState.aiPersonality; // Retrieve personality
+        const userName = appState.userName; // Retrieve user name
+
+        const aiResponse = await generateAIResponse(
+          aiPrompt,
+          { maxTokens: 200 },
+          previousHistory,
+          globalAction,
+          aiPersonality, // Pass personality
+          userName // Pass user name
+        );
         appendMessage('ai', aiResponse);
         appState.addChatMessage(currentSession.id, 'ai', aiResponse);
       } catch (error) {
