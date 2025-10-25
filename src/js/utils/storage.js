@@ -16,6 +16,7 @@ export const StorageKeys = {
   AI_RESPONSE_STYLE: 'aiResponseStyle',
   CUSTOM_AI_MODES: 'customAiModes',
   USER_INFO: 'theora_user_info', // New key for user info in localStorage
+  USER_NAME:'theora_user_name',
 };
 
 export function saveToLocal(key, data) {

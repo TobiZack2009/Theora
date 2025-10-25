@@ -2,7 +2,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import { appState } from '../state/appState.js';
 import { getRelativeTime } from '../utils/helpers.js';
 
-
+window.appState=appState
 
 // --- Constants ---
 const BEDROCK_MODEL_ID = 'us.deepseek.r1-v1:0';
@@ -265,7 +265,7 @@ export async function prioritizeTodos(todos) {
   if (appState.aiMessages.todoPrioritization) {
     return appState.aiMessages.todoPrioritization;
   }
-
+;
   const userName = appState.userName;
   const aiPersonality = appState.aiPersonality;
   const budget = appState.budget;
@@ -281,7 +281,7 @@ export async function prioritizeTodos(todos) {
 
   const prompt = `Given these tasks: ${todos.map(t => `"${t.title}" (priority: ${t.priority}, due: ${t.dueDate || 'no date'})`).join(', ')}. 
   
-  Suggest the optimal order to complete them, considering priority levels, deadlines, and typical student/young professional workflows. Return a brief recommendation.`;
+  Suggest the optimal order to complete them, considering priority levels, deadlines, and typical student/young professional workflows. Return a brief recommendation. You should encourage the user to use Theora's features where necessary. The features include adding setting todos, setting events on a calender and managing budget. Make sure you call the user by their name, which is ${userName || "User"} where necessary.`;
   
   const result = await generateAIResponse(prompt, { maxTokens: 256 }, [], "", userName, userData);
   appState.setAIMessage('todoPrioritization', result);
@@ -308,7 +308,7 @@ export async function analyzeBudget(transactions, budget) {
   
   const prompt = `A user has spent ₦${totalSpent} out of their ₦${budget} budget. Recent transactions: ${transactions.slice(0, 5).map(t => `₦${t.amount} on ${t.category}`).join(', ')}. 
   
-  Provide brief spending insights and suggestions for a Nigerian student/young professional.`;
+  Provide brief spending insights and suggestions for a Nigerian student/young professional named ${userName || "user"}.`;
   
   const result = await generateAIResponse(prompt, { maxTokens: 200 }, [], "", userName, userData);
   appState.setAIMessage('budgetInsight', result);
