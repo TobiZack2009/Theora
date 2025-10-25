@@ -12,6 +12,10 @@
   padding: 0;
   box-sizing: border-box;
 }
+html,body{
+  width: 100vw;
+  height: 100vh;
+}
 
 body {
   font-family: 'Nunito', sans-serif;
@@ -204,6 +208,56 @@ img{
   font-size: 0.9rem;
   color: #666;
 }  
+
+@media (max-width: 768px) {
+  .nav-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-links, .nav-content > .btn-primary {
+    display: none;
+  }
+
+  .hero-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .hero-text {
+    order: 2;
+  }
+
+  .hero-image {
+    order: 1;
+    margin-bottom: 2rem;
+  }
+
+  .hero-text h1 {
+    font-size: 2rem;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-text h1 {
+    font-size: 1.8rem;
+  }
+
+  .btn-primary, .btn-outline {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-buttons {
+    display: flex;
+    flex-direction: column;
+  }
+}
     </style>
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Nunito:wght@400;500;600&display=swap"
