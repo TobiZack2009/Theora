@@ -13,7 +13,7 @@ const production = !process.env.ROLLUP_WATCH;
 export default {
   input: 'src/js/main.js',
   output: {
-    file: 'dist/bundle.js',
+    file: 'site/bundle.js',
     format: 'iife',
     sourcemap: !production,
     name: 'Theora'
@@ -61,16 +61,16 @@ export default {
 
     copy({
       targets: [
-        { src: 'src/index.html', dest: 'dist' },
-        { src: 'src/sw.js', dest: 'dist' },
-        { src: 'public/assets/*', dest: 'dist/assets' }
+        { src: 'src/index.html', dest: 'site' },
+        { src: 'src/sw.js', dest: 'site' },
+        { src: 'public/assets/*', dest: 'site/assets' }
       ],
       hook: 'writeBundle'
     }),
 
     !production && serve({
       open: false,
-      contentBase: 'dist',
+      contentBase: 'site',
       host: '0.0.0.0',
       port: 5005,
       headers: {
@@ -80,7 +80,7 @@ export default {
       }
     }),
 
-    !production && livereload('dist'),
+    !production && livereload('site'),
 
     production && terser()
   ]

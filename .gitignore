@@ -273,3 +273,5 @@ vite.config.ts.timestamp-*
 
 
 node_modules
+dist
+site

@@ -6,6 +6,7 @@ import { renderTodos } from './todos.js';
 import { renderCalendar } from './calendar.js';
 import { renderBudget } from './budget.js';
 import { renderAIChat } from './aiChat.js';
+import { Settings } from './settings.js';
 import { renderLayout } from './layout.js';
 
 {
@@ -59,6 +60,7 @@ function renderCurrentView(container) {
     calendar: renderCalendar,
     budget: renderBudget,
     aiChat: renderAIChat,
+    settings: (container) => container.appendChild(new Settings().getHtml()),
   };
 
   const renderer = viewRenderers[appState.currentView] || renderDashboard;

@@ -6,7 +6,6 @@ import { getRelativeTime } from '../utils/helpers.js';
 
 // --- Constants ---
 const BEDROCK_MODEL_ID = 'us.deepseek.r1-v1:0';
-const AI_PROVIDER = import.meta.env.AI_PROVIDER;
 
 // --- Credentials from Rollup ---
 const AWS_CREDENTIALS = {
@@ -132,11 +131,18 @@ async function fetchEdenAIResponse(prompt, options, previousHistory = [], global
  * @param {object} options - Options like maxTokens, temperature.
  * @returns {Promise<string>} - The AI-generated response.
  */
-export async function generateAIResponse(prompt, options = {}, previousHistory = [], globalAction = "", aiPersonality = 'supportive', userName = 'User', userData = {}) {
-  // Define a mapping for personalities
+export async function generateAIResponse(prompt, options = {}, previousHistory = [], globalAction = "", userName = 'User', userData = {}) {
+  const currentAIProvider = appState.aiProvider; // Get AI provider from appState
+  const aiResponseStyle = appState.aiResponseStyle; // Get AI response style from appState
+
+  // Define a mapping for personalities and response styles
   const personalityPrompts = {
     'supportive': `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide encouraging, helpful, and culturally relevant advice.`,
     'direct': `As Theora, a direct and concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide straightforward, actionable, and culturally relevant advice.`,
+    'normal': `As Theora, a helpful AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide clear, standard, and culturally relevant advice.`,
+    'concise': `As Theora, a concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide brief, to-the-point, and actionable advice.`,
+    'sapa': `As Theora, your financial copilot, I understand say money no dey. Address the user as ${userName}. I go give you advice for pidgin English, make we manage this sapa together. Focus on saving, finding small hustles, and cutting unnecessary spending. Make the advice relatable to Nigerian students/young adults.`,
+    'hustle': `As Theora, your productivity and financial copilot, I dey for your back as you dey hustle. Address the user as ${userName}. I go give you advice for pidgin English, make you fit achieve your goals. Focus on maximizing productivity, smart financial decisions for growth, and leveraging opportunities. Make the advice relatable to Nigerian students/young adults.`,
     // Add more personalities as needed
   };
 
@@ -153,14 +159,14 @@ User's Current State:
 - Upcoming Events (next 24h): ${userData.events?.filter(e => new Date(e.date) - new Date() < 24 * 60 * 60 * 1000).map(e => e.title).join(', ') || 'None'}
 `;
 
-  const effectiveGlobalAction = `${personalityPrompts[aiPersonality] || personalityPrompts['supportive']}
+  const effectiveGlobalAction = `${personalityPrompts[aiResponseStyle] || personalityPrompts['normal']}
 
 ${userContextString}
 
 ${globalAction}`;
 
-  // Primary: Bedrock
-  if (AI_PROVIDER === 'bedrock' && bedrockClient) {
+  // Primary: User-selected provider (or Bedrock as default if not set)
+  if (currentAIProvider === 'bedrock' && bedrockClient) {
     try {
       // For Bedrock, integrate previousHistory and effectiveGlobalAction into the prompt
       const bedrockPrompt = `${effectiveGlobalAction ? effectiveGlobalAction + '\n\n' : ''}${previousHistory.map(msg => `${msg.sender}: ${msg.message}`).join('\n')}\n${prompt}`;
@@ -182,8 +188,8 @@ ${globalAction}`;
     }
   }
 
-  // Primary: Eden AI
-  if (AI_PROVIDER === 'edenai') {
+  // Primary: User-selected provider (Eden AI)
+  if (currentAIProvider === 'edenai') {
     try {
       const response = await fetchEdenAIResponse(prompt, options, previousHistory, effectiveGlobalAction);
       // Handle tool calls if they exist in the response
@@ -218,7 +224,7 @@ ${globalAction}`;
     }
   }
 
-  // Default fallback if no provider is configured or the primary one fails without a fallback
+  // Default fallback if no provider is configured or available. This should ideally not be reached if currentAIProvider is always set.
   console.warn('No primary AI provider configured or available. Using mock response.');
   return getMockAIResponse(prompt);
 }
@@ -268,7 +274,7 @@ export async function prioritizeTodos(todos) {
   
   Suggest the optimal order to complete them, considering priority levels, deadlines, and typical student/young professional workflows. Return a brief recommendation.`;
   
-  const result = await generateAIResponse(prompt, { maxTokens: 256 }, [], "", aiPersonality, userName, userData);
+  const result = await generateAIResponse(prompt, { maxTokens: 256 }, [], "", userName, userData);
   appState.setAIMessage('todoPrioritization', result);
   return result;
 }
@@ -295,7 +301,7 @@ export async function analyzeBudget(transactions, budget) {
   
   Provide brief spending insights and suggestions for a Nigerian student/young professional.`;
   
-  const result = await generateAIResponse(prompt, { maxTokens: 200 }, [], "", aiPersonality, userName, userData);
+  const result = await generateAIResponse(prompt, { maxTokens: 200 }, [], "", userName, userData);
   appState.setAIMessage('budgetInsight', result);
   return result;
 }
@@ -334,7 +340,7 @@ Your tasks:
 
 Example: "Morning ${userName}! You've got a full plate today. That "${todos[0]?.title || 'assignment'}" is your top priority. Knock it out first, then you can focus on your meeting this afternoon. You've got this! Your budget is looking solid at ₦${budget}."`;
 
-  const result = await generateAIResponse(prompt, { maxTokens: 250 }, [], "", aiPersonality, userName, userData);
+  const result = await generateAIResponse(prompt, { maxTokens: 250 }, [], "", userName, userData);
   appState.setAIMessage('dailyBrief', result);
   return result;
 }
@@ -369,7 +375,7 @@ Your advice should focus on:
 
 Ensure the tone is encouraging, culturally relevant (e.g., acknowledging "hustle"), and highly actionable. The response should be well-structured into about 3 paragraphs.`
 
-  const result = await generateAIResponse(prompt, { maxTokens: 300 }, [], "", aiPersonality, userName, userData); // Adjusted maxTokens for ~3 paragraphs
+  const result = await generateAIResponse(prompt, { maxTokens: 300 }, [], "", userName, userData); // Adjusted maxTokens for ~3 paragraphs
   appState.setAIMessage('timeManagementAdvice', result);
   return result;
 }
@@ -441,7 +447,7 @@ export async function generateNotification(budget, todos, events, transactions) 
   }
 
   try {
-    message = await generateAIResponse(prompt, { maxTokens: 80 }, [], "", aiPersonality, userName);
+    message = await generateAIResponse(prompt, { maxTokens: 80 }, [], "", userName);
   } catch (error) {
     console.error('AI Notification Error:', error);
     message = 'Stay productive! Theora is here to help.';

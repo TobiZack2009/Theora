@@ -9,12 +9,11 @@ export const StorageKeys = {
   TRANSACTIONS: 'theora_transactions',
   BUDGET: 'theora_budget',
   SETTINGS: 'theora_settings',
-  AI_MESSAGES: 'theora_ai_messages',
-  NOTIFICATIONS: 'theora_notifications',
-  CHAT_SESSIONS: 'theora_chat_sessions',
-  AI_PERSONALITY: 'theora_ai_personality',
-  USER_NAME: 'theora_user_name',
-  LAST_CHAT_SESSION_ID: 'theora_last_chat_session_id',
+  AI_MESSAGES: 'aiMessages',
+  CHAT_SESSIONS: 'chatSessions',
+  LAST_CHAT_SESSION_ID: 'lastChatSessionId',
+  AI_PROVIDER: 'aiProvider',
+  AI_RESPONSE_STYLE: 'aiResponseStyle',
   USER_INFO: 'theora_user_info', // New key for user info in localStorage
 };
 

@@ -21,6 +21,8 @@ class AppState {
     });
     this.aiPersonality = loadFromLocal(StorageKeys.AI_PERSONALITY, 'supportive'); // New property
     this.userName = loadFromLocal(StorageKeys.USER_NAME, 'User'); // New property
+    this.aiProvider = loadFromLocal(StorageKeys.AI_PROVIDER, 'bedrock'); // 'bedrock' or 'edenai'
+    this.aiResponseStyle = loadFromLocal(StorageKeys.AI_RESPONSE_STYLE, 'normal'); // 'normal', 'concise', 'sapa', 'hustle'
     this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
       dailyBrief: null,
       budgetInsight: null,
