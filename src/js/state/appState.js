@@ -23,6 +23,7 @@ class AppState {
     this.userName = loadFromLocal(StorageKeys.USER_NAME, 'User'); // New property
     this.aiProvider = loadFromLocal(StorageKeys.AI_PROVIDER, 'bedrock'); // 'bedrock' or 'edenai'
     this.aiResponseStyle = loadFromLocal(StorageKeys.AI_RESPONSE_STYLE, 'normal'); // 'normal', 'concise', 'sapa', 'hustle'
+    this.customAiModes = loadFromLocal(StorageKeys.CUSTOM_AI_MODES, []); // New property for custom AI modes
     this.aiMessages = loadFromLocal(StorageKeys.AI_MESSAGES, {
       dailyBrief: null,
       budgetInsight: null,
@@ -211,6 +212,27 @@ class AppState {
       this.emit('aiMessagesChanged', this.aiMessages); // Emit the updated object
     } else {
       console.warn(`Attempted to set unknown AI message type: ${type}`);
+    }
+  }
+
+  addCustomAiMode(mode) {
+    this.customAiModes.push(mode);
+    saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
+    this.emit('customAiModesChanged', this.customAiModes);
+  }
+
+  removeCustomAiMode(modeName) {
+    this.customAiModes = this.customAiModes.filter(mode => mode.name !== modeName);
+    saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
+    this.emit('customAiModesChanged', this.customAiModes);
+  }
+
+  updateCustomAiMode(modeName, newInstruction) {
+    const index = this.customAiModes.findIndex(mode => mode.name === modeName);
+    if (index !== -1) {
+      this.customAiModes[index].instruction = newInstruction;
+      saveToLocal(StorageKeys.CUSTOM_AI_MODES, this.customAiModes);
+      this.emit('customAiModesChanged', this.customAiModes);
     }
   }
 

@@ -135,16 +135,25 @@ export async function generateAIResponse(prompt, options = {}, previousHistory =
   const currentAIProvider = appState.aiProvider; // Get AI provider from appState
   const aiResponseStyle = appState.aiResponseStyle; // Get AI response style from appState
 
-  // Define a mapping for personalities and response styles
-  const personalityPrompts = {
-    'supportive': `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide encouraging, helpful, and culturally relevant advice.`,
-    'direct': `As Theora, a direct and concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide straightforward, actionable, and culturally relevant advice.`,
-    'normal': `As Theora, a helpful AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide clear, standard, and culturally relevant advice.`,
-    'concise': `As Theora, a concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide brief, to-the-point, and actionable advice.`,
-    'sapa': `As Theora, your financial copilot, I understand say money no dey. Address the user as ${userName}. I go give you advice for pidgin English, make we manage this sapa together. Focus on saving, finding small hustles, and cutting unnecessary spending. Make the advice relatable to Nigerian students/young adults.`,
-    'hustle': `As Theora, your productivity and financial copilot, I dey for your back as you dey hustle. Address the user as ${userName}. I go give you advice for pidgin English, make you fit achieve your goals. Focus on maximizing productivity, smart financial decisions for growth, and leveraging opportunities. Make the advice relatable to Nigerian students/young adults.`,
-    // Add more personalities as needed
-  };
+  let selectedPersonalityPrompt = '';
+
+  // Check if the selected aiResponseStyle is a custom mode
+  const customMode = appState.customAiModes.find(mode => mode.name === aiResponseStyle);
+  if (customMode) {
+    selectedPersonalityPrompt = customMode.instruction;
+  } else {
+    // Define a mapping for personalities and response styles
+    const personalityPrompts = {
+      'supportive': `As Theora, a supportive AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide encouraging, helpful, and culturally relevant advice.`,
+      'direct': `As Theora, a direct and concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide straightforward, actionable, and culturally relevant advice.`,
+      'normal': `As Theora, a helpful AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide clear, standard, and culturally relevant advice.`,
+      'concise': `As Theora, a concise AI assistant and financial copilot for Nigerian students and young adults. Address the user as ${userName}. Provide brief, to-the-point, and actionable advice.`,
+      'sapa': `As Theora, your financial copilot, I understand say money no dey. Address the user as ${userName}. I go give you advice for pidgin English, make we manage this sapa together. Focus on saving, finding small hustles, and cutting unnecessary spending. Make the advice relatable to Nigerian students/young adults.`,
+      'hustle': `As Theora, your productivity and financial copilot, I dey for your back as you dey hustle. Address the user as ${userName}. I go give you advice for pidgin English, make you fit achieve your goals. Focus on maximizing productivity, smart financial decisions for growth, and leveraging opportunities. Make the advice relatable to Nigerian students/young adults.`,
+      // Add more personalities as needed
+    };
+    selectedPersonalityPrompt = personalityPrompts[aiResponseStyle] || personalityPrompts['normal'];
+  }
 
   // Construct a comprehensive user context string from userData
   const userContextString = `
@@ -159,7 +168,7 @@ User's Current State:
 - Upcoming Events (next 24h): ${userData.events?.filter(e => new Date(e.date) - new Date() < 24 * 60 * 60 * 1000).map(e => e.title).join(', ') || 'None'}
 `;
 
-  const effectiveGlobalAction = `${personalityPrompts[aiResponseStyle] || personalityPrompts['normal']}
+  const effectiveGlobalAction = `${selectedPersonalityPrompt}
 
 ${userContextString}
 

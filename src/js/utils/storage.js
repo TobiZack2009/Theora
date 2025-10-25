@@ -14,6 +14,7 @@ export const StorageKeys = {
   LAST_CHAT_SESSION_ID: 'lastChatSessionId',
   AI_PROVIDER: 'aiProvider',
   AI_RESPONSE_STYLE: 'aiResponseStyle',
+  CUSTOM_AI_MODES: 'customAiModes',
   USER_INFO: 'theora_user_info', // New key for user info in localStorage
 };
 
